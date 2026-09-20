@@ -1,12 +1,10 @@
 package melonslise.locks.common.network.toclient;
 
-import java.util.function.Supplier;
-
 import melonslise.locks.client.network.ClientPinResultHandler;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
 
 /**
  * The server's verdict on one pin attempt, echoed back with the identity of the request that produced it so the
@@ -44,10 +42,10 @@ public class TryPinResultPacket
 		buf.writeBoolean(pkt.terminal);
 	}
 
-	public static void handle(TryPinResultPacket pkt, Supplier<NetworkEvent.Context> ctx)
+	public static void handle(TryPinResultPacket pkt, CustomPayloadEvent.Context ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
-		ctx.get().enqueueWork(new Runnable()
+		ctx.enqueueWork(new Runnable()
 		{
 			@Override
 			public void run()
@@ -58,6 +56,6 @@ public class TryPinResultPacket
 				DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPinResultHandler.handle(pkt));
 			}
 		});
-		ctx.get().setPacketHandled(true);
+		ctx.setPacketHandled(true);
 	}
 }

@@ -1,5 +1,5 @@
 modLoader="javafml"
-loaderVersion="[47,)"
+loaderVersion="[52,)"
 license="Attribution-NonCommercial 3.0 Unported"
 issueTrackerURL="https://github.com/Melonslise/Locks/issues"
 
@@ -18,21 +18,21 @@ Locks is a small, but unique Minecraft mod that introduces flexible and universa
 [[dependencies.locks]]
 modId="forge"
 mandatory=true
-versionRange="[47,)"
+versionRange="[52,)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.locks]]
 modId="minecraft"
 mandatory=true
-versionRange="[1.20.1,1.21)"
+versionRange="[1.21.1,1.22)"
 ordering="NONE"
 side="BOTH"
 
 [[dependencies.locks]]
 modId="curios"
 mandatory=false
-versionRange="[5.14.0,)"
+versionRange="[8.1.0,)"
 ordering="NONE"
 side="BOTH"
 

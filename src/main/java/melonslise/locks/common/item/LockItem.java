@@ -14,6 +14,7 @@ import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LocksSoundEvents;
 import melonslise.locks.common.init.LockTypeRegistry;
 import melonslise.locks.common.util.Cuboid6i;
+import melonslise.locks.common.util.ItemStackNbt;
 import melonslise.locks.common.util.Lock;
 import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LocksUtil;
@@ -21,10 +22,10 @@ import melonslise.locks.common.util.Transform;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.ChestType;
@@ -53,13 +54,12 @@ public class LockItem extends LockingItem
 
 	public static boolean isOpen(ItemStack stack)
 	{
-		CompoundTag nbt = stack.getTag();
-		return nbt != null && nbt.getBoolean(KEY_OPEN);
+		return ItemStackNbt.getCustomData(stack).getBoolean(KEY_OPEN);
 	}
 
 	public static void setOpen(ItemStack stack, boolean open)
 	{
-		stack.getOrCreateTag().putBoolean(KEY_OPEN, open);
+		ItemStackNbt.updateCustomData(stack, nbt -> nbt.putBoolean(KEY_OPEN, open));
 	}
 
 	public static final String KEY_LENGTH = "Length";
@@ -67,13 +67,13 @@ public class LockItem extends LockingItem
 
 	public static void setOwner(ItemStack stack, UUID uuid)
 	{
-		stack.getOrCreateTag().putUUID(KEY_OWNER, uuid);
+		ItemStackNbt.updateCustomData(stack, nbt -> nbt.putUUID(KEY_OWNER, uuid));
 	}
 
 	public static UUID getOwner(ItemStack stack)
 	{
-		CompoundTag nbt = stack.getTag();
-		if (nbt != null && nbt.hasUUID(KEY_OWNER))
+		CompoundTag nbt = ItemStackNbt.getCustomData(stack);
+		if (nbt.hasUUID(KEY_OWNER))
 			return nbt.getUUID(KEY_OWNER);
 		return null;
 	}
@@ -81,9 +81,13 @@ public class LockItem extends LockingItem
 	// WARNING: EXPECTS LOCKITEM STACK
 	public static byte getOrSetLength(ItemStack stack)
 	{
-		CompoundTag nbt = stack.getOrCreateTag();
+		CompoundTag nbt = ItemStackNbt.getCustomData(stack);
 		if(!nbt.contains(KEY_LENGTH))
-			nbt.putByte(KEY_LENGTH, (byte) LockTypeRegistry.getLockStats(stack.getItem()).length());
+		{
+			byte length = (byte) LockTypeRegistry.getLockStats(stack.getItem()).length();
+			ItemStackNbt.updateCustomData(stack, tag -> tag.putByte(KEY_LENGTH, length));
+			return length;
+		}
 		return nbt.getByte(KEY_LENGTH);
 	}
 
@@ -132,7 +136,7 @@ public class LockItem extends LockingItem
 			ItemStack lockStack = stack.copy();
 			lockStack.setCount(1);
 			if (LocksServerConfig.ENABLE_AWARENESS.get()
-				&& EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.AWARENESS.get(), lockStack) > 0)
+				&& LocksEnchantments.level(LocksEnchantments.AWARENESS, lockStack) > 0)
 				setOwner(lockStack, player.getUUID());
 			ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
 			if (handler == null)
@@ -180,7 +184,7 @@ public class LockItem extends LockingItem
 		ItemStack lockStack = stack.copy();
 		lockStack.setCount(1);
 		if (LocksServerConfig.ENABLE_AWARENESS.get()
-			&& EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.AWARENESS.get(), lockStack) > 0)
+			&& LocksEnchantments.level(LocksEnchantments.AWARENESS, lockStack) > 0)
 			setOwner(lockStack, player.getUUID());
 		ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
 		if (handler == null)
@@ -223,16 +227,17 @@ public class LockItem extends LockingItem
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void appendHoverText(ItemStack stack, Level world, List<Component> lines, TooltipFlag flag)
+	public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag)
 	{
-		super.appendHoverText(stack, world, lines, flag);
+		super.appendHoverText(stack, context, lines, flag);
 		int displayLength;
-		if (stack.hasTag() && stack.getTag().contains(KEY_LENGTH))
-			displayLength = stack.getTag().getByte(KEY_LENGTH);
+		CompoundTag customData = ItemStackNbt.getCustomData(stack);
+		if (customData.contains(KEY_LENGTH))
+			displayLength = customData.getByte(KEY_LENGTH);
 		else
 			displayLength = LockTypeRegistry.getLockStats(this).length();
-		lines.add(Component.translatable(Locks.ID + ".tooltip.length", ItemStack.ATTRIBUTE_MODIFIER_FORMAT.format(displayLength)).withStyle(ChatFormatting.DARK_GREEN));
-		if (stack.hasTag() && stack.getTag().hasUUID(KEY_OWNER))
+		lines.add(Component.translatable(Locks.ID + ".tooltip.length", Integer.toString(displayLength)).withStyle(ChatFormatting.DARK_GREEN));
+		if (customData.hasUUID(KEY_OWNER))
 			lines.add(Component.translatable(Locks.ID + ".tooltip.owned").withStyle(ChatFormatting.LIGHT_PURPLE));
 	}
 }

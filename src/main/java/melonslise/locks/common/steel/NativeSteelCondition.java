@@ -2,12 +2,13 @@ package melonslise.locks.common.steel;
 
 import java.util.Locale;
 
-import com.google.gson.JsonObject;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DynamicOps;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 import net.minecraftforge.common.crafting.conditions.ICondition;
-import net.minecraftforge.common.crafting.conditions.IConditionSerializer;
 
 import melonslise.locks.Locks;
 import melonslise.locks.common.config.LocksServerConfig;
@@ -26,9 +27,12 @@ import melonslise.locks.common.config.LocksServerConfig;
  * }</pre>
  * Negate with the stock {@code forge:not} wrapper (e.g. the iron-mechanism fallback loads when steel is absent).
  */
-public final class NativeSteelCondition implements ICondition
+public record NativeSteelCondition(Query query) implements ICondition
 {
-	public static final ResourceLocation NAME = new ResourceLocation(Locks.ID, "steel");
+	public static final ResourceLocation NAME = ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel");
+	public static final MapCodec<NativeSteelCondition> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+		Codec.STRING.xmap(value -> Query.valueOf(value.toUpperCase(Locale.ROOT)), query -> query.name().toLowerCase(Locale.ROOT)).fieldOf("query").forGetter(NativeSteelCondition::query)
+	).apply(instance, NativeSteelCondition::new));
 
 	public enum Query
 	{
@@ -42,21 +46,8 @@ public final class NativeSteelCondition implements ICondition
 		STEEL_AVAILABLE
 	}
 
-	private final Query query;
-
-	public NativeSteelCondition(Query query)
-	{
-		this.query = query;
-	}
-
 	@Override
-	public ResourceLocation getID()
-	{
-		return NAME;
-	}
-
-	@Override
-	public boolean test(IContext context)
+	public boolean test(IContext context, DynamicOps<?> ops)
 	{
 		NativeSteelState state = NativeSteelPolicy.compute(new ConditionTagView(context), currentMode());
 		switch (query)
@@ -97,36 +88,9 @@ public final class NativeSteelCondition implements ICondition
 		return "locks:steel(" + query.name().toLowerCase(Locale.ROOT) + ")";
 	}
 
-	public static final class Serializer implements IConditionSerializer<NativeSteelCondition>
+	@Override
+	public MapCodec<? extends ICondition> codec()
 	{
-		public static final Serializer INSTANCE = new Serializer();
-
-		@Override
-		public void write(JsonObject json, NativeSteelCondition value)
-		{
-			json.addProperty("query", value.query.name().toLowerCase(Locale.ROOT));
-		}
-
-		@Override
-		public NativeSteelCondition read(JsonObject json)
-		{
-			String raw = GsonHelper.getAsString(json, "query");
-			Query query;
-			try
-			{
-				query = Query.valueOf(raw.toUpperCase(Locale.ROOT));
-			}
-			catch (IllegalArgumentException e)
-			{
-				throw new com.google.gson.JsonSyntaxException("Unknown locks:steel condition query '" + raw + "'");
-			}
-			return new NativeSteelCondition(query);
-		}
-
-		@Override
-		public ResourceLocation getID()
-		{
-			return NAME;
-		}
+		return CODEC;
 	}
 }

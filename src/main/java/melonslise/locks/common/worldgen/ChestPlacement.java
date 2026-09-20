@@ -2,7 +2,7 @@ package melonslise.locks.common.worldgen;
 
 import java.util.stream.Stream;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 
 import melonslise.locks.Locks;
 import melonslise.locks.common.init.LocksPlacements;
@@ -20,7 +20,7 @@ import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
 
 public class ChestPlacement extends PlacementModifier
 {
-	public static final Codec<ChestPlacement> CODEC = Codec.unit(ChestPlacement::new);
+	public static final MapCodec<ChestPlacement> CODEC = MapCodec.unit(ChestPlacement::new);
 
 	public ChestPlacement() {}
 

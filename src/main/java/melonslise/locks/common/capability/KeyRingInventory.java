@@ -4,6 +4,7 @@ import javax.annotation.Nonnull;
 
 import melonslise.locks.common.init.LocksItemTags;
 import melonslise.locks.common.init.LocksTagHelper;
+import melonslise.locks.common.util.ItemStackNbt;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -37,7 +38,7 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		int[] index = new int[this.size];
 		for(int i = 0; i < this.size; i++)
 			index[i] = -1;
-		ListTag list = this.stack.getOrCreateTag().getList("Items", Tag.TAG_COMPOUND);
+		ListTag list = ItemStackNbt.getCustomData(this.stack).getList("Items", Tag.TAG_COMPOUND);
 		for(int a = 0; a < list.size(); a++)
 		{
 			int slot = list.getCompound(a).getInt("Slot");
@@ -60,8 +61,8 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		int idx = this.slotToListIndex[slot];
 		if(idx == -1)
 			return ItemStack.EMPTY;
-		ListTag list = this.stack.getOrCreateTag().getList("Items", Tag.TAG_COMPOUND);
-		return ItemStack.of(list.getCompound(idx));
+		ListTag list = ItemStackNbt.getCustomData(this.stack).getList("Items", Tag.TAG_COMPOUND);
+		return ItemStackNbt.parse(net.minecraft.core.RegistryAccess.EMPTY, list.getCompound(idx));
 	}
 
 	@Override
@@ -72,11 +73,14 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		CompoundTag nbt = null;
 		if(!stack.isEmpty())
 		{
-			nbt = new CompoundTag();
-			nbt.putInt("Slot", slot);
-			stack.save(nbt);
+			CompoundTag entry = new CompoundTag();
+			entry.putInt("Slot", slot);
+			CompoundTag saved = (CompoundTag) ItemStackNbt.save(net.minecraft.core.RegistryAccess.EMPTY, stack);
+			for(String key : saved.getAllKeys())
+				entry.put(key, saved.get(key));
+			nbt = entry;
 		}
-		ListTag list = this.stack.getOrCreateTag().getList("Items", Tag.TAG_COMPOUND);
+		ListTag list = ItemStackNbt.getCustomData(this.stack).getList("Items", Tag.TAG_COMPOUND);
 		for(int a = 0; a < list.size(); a++)
 		{
 			CompoundTag existing = list.getCompound(a);
@@ -86,11 +90,14 @@ public class KeyRingInventory implements IItemHandlerModifiable
 				list.set(a, nbt);
 			else
 				list.remove(a);
+			ListTag finalList = list;
+			ItemStackNbt.updateCustomData(this.stack, tag -> tag.put("Items", finalList));
 			return;
 		}
 		if(!stack.isEmpty())
 			list.add(nbt);
-		this.stack.getOrCreateTag().put("Items", list);
+		ListTag finalList = list;
+		ItemStackNbt.updateCustomData(this.stack, tag -> tag.put("Items", finalList));
 	}
 
 	@Override

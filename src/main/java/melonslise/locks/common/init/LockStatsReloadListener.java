@@ -47,7 +47,7 @@ public class LockStatsReloadListener extends SimplePreparableReloadListener<Lock
 			// Extract the short name: "locks/lock_stat_overrides/foo.json" -> "foo"
 			String path = fileId.getPath();
 			String name = path.substring(directory.length() + 1, path.length() - 5);
-			ResourceLocation id = new ResourceLocation(fileId.getNamespace(), name);
+			ResourceLocation id = ResourceLocation.fromNamespaceAndPath(fileId.getNamespace(), name);
 
 			try (Reader reader = entry.getValue().openAsReader())
 			{

@@ -224,7 +224,7 @@ public final class LocksConfig
 		for(int a = 0; a < Math.min(locks.size(), weights.size()); ++a)
 		{
 			weightTotal += weights.get(a);
-			weightedGeneratedLocks.put(weightTotal, ForgeRegistries.ITEMS.getValue(new ResourceLocation(locks.get(a))));
+			weightedGeneratedLocks.put(weightTotal, ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(locks.get(a))));
 		}
 
 		// Build loot value tier map
@@ -233,7 +233,7 @@ public final class LocksConfig
 		if (tiers.size() != locks.size())
 			Locks.LOGGER.warn("Loot Value Tiers list size ({}) doesn't match Generated Locks list size ({}). Some lock tiers may be unreachable.", tiers.size(), locks.size());
 		for(int a = 0; a < Math.min(locks.size(), tiers.size()); ++a)
-			lootValueTierMap.put(tiers.get(a), ForgeRegistries.ITEMS.getValue(new ResourceLocation(locks.get(a))));
+			lootValueTierMap.put(tiers.get(a), ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(locks.get(a))));
 
 		// Parse item value overrides
 		itemValueOverrides = new HashMap<>();
@@ -247,7 +247,7 @@ public final class LocksConfig
 			}
 			try
 			{
-				ResourceLocation itemId = new ResourceLocation(entry.substring(0, eq));
+				ResourceLocation itemId = ResourceLocation.parse(entry.substring(0, eq));
 				double value = Double.parseDouble(entry.substring(eq + 1));
 				itemValueOverrides.put(itemId, value);
 			}
@@ -275,12 +275,6 @@ public final class LocksConfig
 		ItemStack stack = new ItemStack(entry.getValue());
 		if (stack.isEmpty())
 			return ItemStack.EMPTY;
-		if (!canEnchant(rng))
-			return stack;
-		stack = EnchantmentHelper.enchantItem(rng, stack, 5 + rng.nextInt(30), false);
-		var enchantments = EnchantmentHelper.getEnchantments(stack);
-		if (enchantments.entrySet().removeIf(e -> !LocksServerConfig.isEnchantmentEnabled(e.getKey())))
-			EnchantmentHelper.setEnchantments(enchantments, stack);
 		return stack;
 	}
 
@@ -292,13 +286,6 @@ public final class LocksConfig
 		if (entry == null)
 			return ItemStack.EMPTY;
 		ItemStack stack = new ItemStack(entry.getValue());
-		if (!canEnchant(rng))
-			return stack;
-		stack = EnchantmentHelper.enchantItem(rng, stack, 5 + rng.nextInt(30), false);
-		// Strip any disabled enchantments from the generated stack
-		var enchantments = EnchantmentHelper.getEnchantments(stack);
-		if (enchantments.entrySet().removeIf(e -> !LocksServerConfig.isEnchantmentEnabled(e.getKey())))
-			EnchantmentHelper.setEnchantments(enchantments, stack);
 		return stack;
 	}
 
@@ -332,7 +319,7 @@ public final class LocksConfig
 		int w = pickWear.get();
 		if (l >= 0 || e >= 0 || r >= 0 || w >= 0)
 		{
-			ResourceLocation id = new ResourceLocation(Locks.ID, name);
+			ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Locks.ID, name);
 			LockTypeRegistry.applyConfigLockOverride(id, l, e, r, w);
 		}
 	}
@@ -342,7 +329,7 @@ public final class LocksConfig
 		double s = strength.get();
 		if (s >= 0)
 		{
-			ResourceLocation id = new ResourceLocation(Locks.ID, name);
+			ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Locks.ID, name);
 			LockTypeRegistry.applyConfigPickOverride(id, (float) s);
 		}
 	}

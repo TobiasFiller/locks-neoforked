@@ -1,11 +1,9 @@
 package melonslise.locks.common.network.toclient;
 
-import java.util.function.Supplier;
-
 import melonslise.locks.common.init.LocksCapabilities;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 public class RemoveLockablePacket
 {
@@ -26,10 +24,10 @@ public class RemoveLockablePacket
 		buf.writeInt(pkt.id);
 	}
 
-	public static void handle(RemoveLockablePacket pkt, Supplier<NetworkEvent.Context> ctx)
+	public static void handle(RemoveLockablePacket pkt, CustomPayloadEvent.Context ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
-		ctx.get().enqueueWork(new Runnable()
+		ctx.enqueueWork(new Runnable()
 		{
 			@Override
 			public void run()
@@ -39,6 +37,6 @@ public class RemoveLockablePacket
 				Minecraft.getInstance().level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).ifPresent(handler -> handler.remove(pkt.id));
 			}
 		});
-		ctx.get().setPacketHandled(true);
+		ctx.setPacketHandled(true);
 	}
 }

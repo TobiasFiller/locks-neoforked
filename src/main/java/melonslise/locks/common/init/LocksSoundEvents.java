@@ -30,6 +30,6 @@ public final class LocksSoundEvents
 
 	public static RegistryObject<SoundEvent> add(String name)
 	{
-		return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(Locks.ID, name)));
+		return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(Locks.ID, name)));
 	}
 }

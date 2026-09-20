@@ -1,7 +1,5 @@
 package melonslise.locks.common.network.toclient;
 
-import java.util.function.Supplier;
-
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import melonslise.locks.common.capability.ILockableHandler;
 import melonslise.locks.common.init.LocksCapabilities;
@@ -10,9 +8,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkStatus;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 public class AddLockableToChunkPacket
 {
@@ -48,10 +46,10 @@ public class AddLockableToChunkPacket
 		buf.writeInt(pkt.z);
 	}
 
-	public static void handle(AddLockableToChunkPacket pkt, Supplier<NetworkEvent.Context> ctx)
+	public static void handle(AddLockableToChunkPacket pkt, CustomPayloadEvent.Context ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
-		ctx.get().enqueueWork(new Runnable()
+		ctx.enqueueWork(new Runnable()
 		{
 			@Override
 			public void run()
@@ -81,6 +79,6 @@ public class AddLockableToChunkPacket
 					ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).ifPresent(st -> st.add(lkb));
 			}
 		});
-		ctx.get().setPacketHandled(true);
+		ctx.setPacketHandled(true);
 	}
 }

@@ -11,7 +11,7 @@ import net.minecraft.world.level.Level;
 public final class LocksDamageSources
 {
 	public static final ResourceKey<DamageType> SHOCK = ResourceKey.create(
-		Registries.DAMAGE_TYPE, new ResourceLocation(Locks.ID, "shock"));
+		Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(Locks.ID, "shock"));
 
 	private LocksDamageSources() {}
 

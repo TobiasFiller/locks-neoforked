@@ -19,6 +19,7 @@ import melonslise.locks.common.network.toclient.AddLockableToChunkPacket;
 import melonslise.locks.common.network.toclient.RemoveLockablePacket;
 import melonslise.locks.common.network.toclient.UpdateLockablePacket;
 import melonslise.locks.common.util.Lockable;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.BlockPos;
@@ -33,7 +34,7 @@ import net.minecraftforge.network.PacketDistributor;
  */
 public class LockableHandler implements ILockableHandler
 {
-	public static final ResourceLocation ID = new ResourceLocation(Locks.ID, "lockable_handler");
+	public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "lockable_handler");
 
 	public final Level world;
 
@@ -73,7 +74,7 @@ public class LockableHandler implements ILockableHandler
 		net.minecraft.server.MinecraftServer server = sl.getServer();
 		if(server == null || !server.isSameThread())
 			return null;
-		this.savedData = sl.getDataStorage().computeIfAbsent(LocksSavedData::load, LocksSavedData::new, LocksSavedData.NAME);
+		this.savedData = sl.getDataStorage().computeIfAbsent(LocksSavedData.factory(), LocksSavedData.NAME);
 		// Bootstrap the in-memory counter from the persisted value so ids stay unique across restarts.
 		if(this.savedData.getLastId() > this.lastId.get())
 			this.lastId.set(this.savedData.getLastId());
@@ -180,7 +181,7 @@ public class LockableHandler implements ILockableHandler
 		if(this.world.isClientSide)
 			lkb.swing(10);
 		else
-			LocksNetwork.MAIN.send(LocksPacketDistributors.TRACKING_AREA.with(() -> sts.stream().map(st -> ((LockableStorage) st).chunk)), new AddLockablePacket(lkb));
+			LocksNetwork.MAIN.send(new AddLockablePacket(lkb), LocksPacketDistributors.TRACKING_AREA.with(sts.stream().map(st -> ((LockableStorage) st).chunk)));
 		return true;
 	}
 
@@ -234,7 +235,7 @@ public class LockableHandler implements ILockableHandler
 		// Do client/server extras
 		if(this.world.isClientSide)
 			return true;
-		LocksNetwork.MAIN.send(LocksPacketDistributors.TRACKING_AREA.with(() -> chs.stream().filter(Objects::nonNull)), new RemoveLockablePacket(id));
+		LocksNetwork.MAIN.send(new RemoveLockablePacket(id), LocksPacketDistributors.TRACKING_AREA.with(chs.stream().filter(Objects::nonNull)));
 		return true;
 	}
 
@@ -271,7 +272,7 @@ public class LockableHandler implements ILockableHandler
 			if(sync && !this.world.isClientSide)
 			{
 				Lockable send = canonical;
-				LocksNetwork.MAIN.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), new AddLockableToChunkPacket(send, chunk));
+				LocksNetwork.MAIN.send(new AddLockableToChunkPacket(send, chunk), PacketDistributor.TRACKING_CHUNK.with(chunk));
 			}
 		}
 	}
@@ -319,17 +320,17 @@ public class LockableHandler implements ILockableHandler
 		Lockable lockable = (Lockable) o;
 		// Persist the state change across ALL occupied chunks, not just whichever one triggered it.
 		this.markDirty(lockable);
-		LocksNetwork.MAIN.send(LocksPacketDistributors.TRACKING_AREA.with(() -> lockable.bb.containedChunksTo((x, z) -> this.world.getChunkSource().getChunkNow(x, z), false).stream().filter(Objects::nonNull)), new UpdateLockablePacket(lockable));
+		LocksNetwork.MAIN.send(new UpdateLockablePacket(lockable), LocksPacketDistributors.TRACKING_AREA.with(lockable.bb.containedChunksTo((x, z) -> this.world.getChunkSource().getChunkNow(x, z), false).stream().filter(Objects::nonNull)));
 	}
 
 	@Override
-	public IntTag serializeNBT()
+	public IntTag serializeNBT(HolderLookup.Provider provider)
 	{
 		return IntTag.valueOf(this.lastId.get());
 	}
 
 	@Override
-	public void deserializeNBT(IntTag nbt)
+	public void deserializeNBT(HolderLookup.Provider provider, IntTag nbt)
 	{
 		this.lastId.set(nbt.getAsInt());
 	}

@@ -27,7 +27,7 @@ class NativeSteelPolicyTest
 
 	private static ResourceLocation rl(String s)
 	{
-		return new ResourceLocation(s);
+		return ResourceLocation.parse(s);
 	}
 
 	private static List<ResourceLocation> ids(String... s)

@@ -20,7 +20,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.level.storage.loot.LootDataType;
 import net.minecraftforge.registries.ForgeRegistries;
 
 public final class LootValueCalculator
@@ -36,15 +35,18 @@ public final class LootValueCalculator
 	{
 		cache.clear();
 		int computed = 0;
-		for (ResourceLocation id : server.getLootData().getKeys(LootDataType.TABLE))
+		Map<ResourceLocation, Resource> resources = server.getResourceManager().listResources("loot_tables", id -> id.getPath().endsWith(".json"));
+		for (ResourceLocation resourceId : resources.keySet())
 		{
-			if (!id.getPath().startsWith("chests/"))
+			String path = resourceId.getPath();
+			if (!path.startsWith("loot_tables/chests/") || !path.endsWith(".json"))
 				continue;
-			Double lootValue = computeLootValue(server, id, new HashSet<>());
-			if (lootValue == null)
-				continue;
-			cache.put(id, lootValue);
-			computed++;
+
+			String tablePath = path.substring("loot_tables/".length(), path.length() - ".json".length());
+			ResourceLocation tableId = ResourceLocation.fromNamespaceAndPath(resourceId.getNamespace(), tablePath);
+			Double value = computeLootValue(server, tableId, new HashSet<>());
+			if (value != null)
+				computed++;
 		}
 		Locks.LOGGER.info("Pre-computed loot value estimates for {} chest loot tables", computed);
 	}
@@ -84,7 +86,7 @@ public final class LootValueCalculator
 			return null;
 		}
 
-		ResourceLocation resourceId = new ResourceLocation(lootTableId.getNamespace(), "loot_tables/" + lootTableId.getPath() + ".json");
+		ResourceLocation resourceId = ResourceLocation.fromNamespaceAndPath(lootTableId.getNamespace(), "loot_tables/" + lootTableId.getPath() + ".json");
 		try
 		{
 			Resource resource = server.getResourceManager().getResource(resourceId).orElse(null);

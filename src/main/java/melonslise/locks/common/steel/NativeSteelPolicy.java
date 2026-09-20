@@ -31,15 +31,15 @@ import melonslise.locks.Locks;
 public final class NativeSteelPolicy
 {
 	/** Known native fallback registry IDs — excluded from foreign-steel detection. */
-	public static final ResourceLocation STEEL_INGOT_ID = new ResourceLocation(Locks.ID, "steel_ingot");
-	public static final ResourceLocation STEEL_NUGGET_ID = new ResourceLocation(Locks.ID, "steel_nugget");
-	public static final ResourceLocation STEEL_ORE_ID = new ResourceLocation(Locks.ID, "steel_ore");
-	public static final ResourceLocation DEEPSLATE_STEEL_ORE_ID = new ResourceLocation(Locks.ID, "deepslate_steel_ore");
+	public static final ResourceLocation STEEL_INGOT_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_ingot");
+	public static final ResourceLocation STEEL_NUGGET_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_nugget");
+	public static final ResourceLocation STEEL_ORE_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_ore");
+	public static final ResourceLocation DEEPSLATE_STEEL_ORE_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "deepslate_steel_ore");
 
 	/** Common Forge steel tag locations. */
-	public static final ResourceLocation TAG_INGOTS_STEEL = new ResourceLocation("forge", "ingots/steel");
-	public static final ResourceLocation TAG_NUGGETS_STEEL = new ResourceLocation("forge", "nuggets/steel");
-	public static final ResourceLocation TAG_ORES_STEEL = new ResourceLocation("forge", "ores/steel");
+	public static final ResourceLocation TAG_INGOTS_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "ingots/steel");
+	public static final ResourceLocation TAG_NUGGETS_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "nuggets/steel");
+	public static final ResourceLocation TAG_ORES_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "ores/steel");
 
 	private static final NativeSteelState DEFAULT_ALL_NATIVE =
 		new NativeSteelState(true, true, true, List.of(), List.of(), List.of());

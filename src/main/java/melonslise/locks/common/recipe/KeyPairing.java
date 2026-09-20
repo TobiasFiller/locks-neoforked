@@ -2,8 +2,8 @@ package melonslise.locks.common.recipe;
 
 import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.init.LocksTagHelper;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
 
 /**
  * What a key-pairing craft accepts.
@@ -63,25 +63,25 @@ public final class KeyPairing
 		return sources == 1 && blanks == 1;
 	}
 
-	public static SlotKind[] classify(CraftingContainer inv)
+	public static SlotKind[] classify(CraftingInput inv)
 	{
-		SlotKind[] kinds = new SlotKind[inv.getContainerSize()];
+		SlotKind[] kinds = new SlotKind[inv.size()];
 		for(int a = 0; a < kinds.length; ++a)
 			kinds[a] = classify(inv.getItem(a));
 		return kinds;
 	}
 
-	public static boolean matches(CraftingContainer inv)
+	public static boolean matches(CraftingInput inv)
 	{
 		return isValidLayout(classify(inv));
 	}
 
 	/** The source stack itself (not a copy), or EMPTY when the grid is not a valid pairing. */
-	public static ItemStack findSource(CraftingContainer inv)
+	public static ItemStack findSource(CraftingInput inv)
 	{
 		if(!matches(inv))
 			return ItemStack.EMPTY;
-		for(int a = 0; a < inv.getContainerSize(); ++a)
+		for(int a = 0; a < inv.size(); ++a)
 			if(classify(inv.getItem(a)) == SlotKind.SOURCE)
 				return inv.getItem(a);
 		return ItemStack.EMPTY;

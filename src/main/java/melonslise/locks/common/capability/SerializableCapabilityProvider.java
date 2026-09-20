@@ -1,6 +1,7 @@
 package melonslise.locks.common.capability;
 
 import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.Tag;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
@@ -38,14 +39,14 @@ public class SerializableCapabilityProvider<A extends INBTSerializable<T>, T ext
 	}
 
 	@Override
-	public T serializeNBT()
+	public T serializeNBT(HolderLookup.Provider provider)
 	{
-		return this.inst.serializeNBT();
+		return this.inst.serializeNBT(provider);
 	}
 
 	@Override
-	public void deserializeNBT(T nbt)
+	public void deserializeNBT(HolderLookup.Provider provider, T nbt)
 	{
-		this.inst.deserializeNBT(nbt);
+		this.inst.deserializeNBT(provider, nbt);
 	}
 }

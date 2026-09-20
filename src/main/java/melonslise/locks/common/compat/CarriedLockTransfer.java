@@ -5,26 +5,26 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import melonslise.locks.Locks;
 import melonslise.locks.common.capability.ILockableHandler;
 import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.util.Cuboid6i;
 import melonslise.locks.common.util.Lockable;
-import melonslise.locks.common.util.LocksUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
  * Moves Locks Reforged {@link Lockable}s together with a block that Carry On picks up and places.
  *
- * <p>The serialized lockables ride inside the block entity's Forge persistent data ({@code ForgeData}),
- * which Carry On already saves into its carried {@code "tile"} NBT ({@code BlockEntity#saveWithId}) and
- * restores on placement ({@code BlockEntity#loadStatic}). This needs no new storage: the canonical lock
+ * <p>The serialized lockables ride inside the block entity's custom save data, which Carry On already
+ * saves into its carried {@code "tile"} NBT and restores on placement. This needs no new storage: the canonical lock
  * store remains the per-chunk {@code LockableStorage} + per-level {@code LockableHandler}, updated here
  * through {@link ILockableHandler#remove(int)} and {@link ILockableHandler#add(Lockable)} which already
  * fan out across every affected chunk, mark them unsaved, and sync clients.
@@ -37,36 +37,37 @@ public final class CarriedLockTransfer
 	private CarriedLockTransfer() {}
 
 	/**
-	 * At pickup: serialize every lockable covering {@code pickupPos} into the block entity's persistent
+	 * At pickup: serialize every lockable covering {@code pickupPos} into the block entity's custom save
 	 * data and remove them from the world. Called from the Carry On {@code CarryOnData.setBlock} hook,
 	 * which is the guaranteed pickup-success point (after all of Carry On's own abort checks, and before
 	 * the block/entity are removed), so removal here is safe.
 	 */
 	public static void capture(Level level, BlockPos pickupPos, BlockEntity be)
 	{
-		if (be == null || level.isClientSide || !CarryOnCompat.enabled())
+		if (level.isClientSide)
 			return;
-
-		List<Lockable> lockables = LocksUtil.intersecting(level, pickupPos).collect(Collectors.toList());
-		if (lockables.isEmpty())
-			return;
-
 		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
 		if (handler == null)
 			return;
 
+		List<Lockable> lockables = handler.snapshotLoaded().stream()
+			.filter(lkb -> lkb.bb.intersects(pickupPos))
+			.collect(Collectors.toList());
+		if (lockables.isEmpty())
+			return;
+
 		ListTag list = new ListTag();
-		for (Lockable lkb : lockables)
-			list.add(Lockable.toNbt(lkb));
+		for (Lockable lockable : lockables)
+		{
+			list.add(Lockable.toNbt(lockable));
+			handler.remove(lockable.id);
+		}
 
-		CompoundTag data = be.getPersistentData();
-		data.put(KEY_LOCKABLES, list);
-		data.putLong(KEY_ORIGIN, pickupPos.asLong());
-
-		for (Lockable lkb : lockables)
-			handler.remove(lkb.id);
-
-		CarryOnCompat.log("Captured {} lockable(s) from {}", lockables.size(), pickupPos);
+		CompoundTag payload = be.components().getOrDefault(DataComponents.BLOCK_ENTITY_DATA, CustomData.EMPTY).copyTag();
+		payload.put(KEY_LOCKABLES, list);
+		payload.put(KEY_ORIGIN, writePos(pickupPos));
+		setPayload(be, payload);
+		be.setChanged();
 	}
 
 	/**
@@ -76,59 +77,62 @@ public final class CarriedLockTransfer
 	 */
 	public static void restore(ServerLevel level, BlockPos placePos, BlockEntity be)
 	{
-		if (be == null || !CarryOnCompat.enabled())
+		if (be == null)
 			return;
-
-		CompoundTag data = be.getPersistentData();
-		if (!data.contains(KEY_LOCKABLES, Tag.TAG_LIST))
-			return;
-
-		BlockPos oldOrigin = BlockPos.of(data.getLong(KEY_ORIGIN));
-		int dx = placePos.getX() - oldOrigin.getX();
-		int dy = placePos.getY() - oldOrigin.getY();
-		int dz = placePos.getZ() - oldOrigin.getZ();
-
 		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
 		if (handler == null)
 			return;
 
-		ListTag list = data.getList(KEY_LOCKABLES, Tag.TAG_COMPOUND);
-		Set<Integer> failed = new LinkedHashSet<>();
-		int restored = 0;
+		CompoundTag payload = be.components().getOrDefault(DataComponents.BLOCK_ENTITY_DATA, CustomData.EMPTY).copyTag();
+		ListTag list = payload.getList(KEY_LOCKABLES, Tag.TAG_COMPOUND);
+		if (list.isEmpty())
+			return;
+
+		BlockPos origin = readPos(payload.getCompound(KEY_ORIGIN));
+		Set<Integer> failedIndices = new LinkedHashSet<>();
 		for (int i = 0; i < list.size(); ++i)
 		{
 			Lockable original = Lockable.fromNbt(list.getCompound(i));
-			Cuboid6i newBox = original.bb.offset(dx, dy, dz);
-			Lockable moved = movedCopy(original, newBox);
-			if (handler.add(moved))
-			{
-				++restored;
-			}
-			else
-			{
-				// add() rejects on unloaded target chunks, an overlapping lockable, or over-volume.
-				failed.add(i);
-				Locks.LOGGER.warn("[CarryOn] Failed to restore lockable id={} at {} (handler rejected add); keeping it on the carried block", moved.id, placePos);
-			}
+			Cuboid6i movedBox = original.bb.offset(placePos.getX() - origin.getX(), placePos.getY() - origin.getY(), placePos.getZ() - origin.getZ());
+			if (!handler.add(movedCopy(original, movedBox)))
+				failedIndices.add(i);
 		}
 
-		// Only the entries that were actually accepted leave the payload. Clearing it unconditionally — as this
-		// did before — permanently destroyed any lockable the handler refused.
-		ListTag retained = retain(list, failed);
+		ListTag retained = retain(list, failedIndices);
 		if (retained.isEmpty())
 		{
-			data.remove(KEY_LOCKABLES);
-			data.remove(KEY_ORIGIN);
+			payload.remove(KEY_LOCKABLES);
+			payload.remove(KEY_ORIGIN);
 		}
 		else
-		{
-			// The origin stays untouched so a later placement offsets the retained boxes from the same base.
-			data.put(KEY_LOCKABLES, retained);
-			Locks.LOGGER.warn("[CarryOn] Retained {} lockable(s) on the carried block at {} for a later placement", retained.size(), placePos);
-		}
+			payload.put(KEY_LOCKABLES, retained);
+		CustomData data = CustomData.of(payload);
+		setPayload(be, payload);
+		data.loadInto(be, level.registryAccess());
 		be.setChanged();
+	}
 
-		CarryOnCompat.log("Restored {} lockable(s) at {}", restored, placePos);
+	private static void setPayload(BlockEntity be, CompoundTag payload)
+	{
+		DataComponentMap components = DataComponentMap.builder()
+			.addAll(be.components())
+			.set(DataComponents.BLOCK_ENTITY_DATA, CustomData.of(payload))
+			.build();
+		be.setComponents(components);
+	}
+
+	private static CompoundTag writePos(BlockPos pos)
+	{
+		CompoundTag tag = new CompoundTag();
+		tag.putInt("X", pos.getX());
+		tag.putInt("Y", pos.getY());
+		tag.putInt("Z", pos.getZ());
+		return tag;
+	}
+
+	private static BlockPos readPos(CompoundTag tag)
+	{
+		return new BlockPos(tag.getInt("X"), tag.getInt("Y"), tag.getInt("Z"));
 	}
 
 	/**

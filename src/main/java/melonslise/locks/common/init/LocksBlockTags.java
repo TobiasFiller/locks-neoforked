@@ -15,6 +15,6 @@ public final class LocksBlockTags
 
 	public static TagKey<Block> bind(String name)
 	{
-		return BlockTags.create(new ResourceLocation(Locks.ID, name));
+		return BlockTags.create(ResourceLocation.fromNamespaceAndPath(Locks.ID, name));
 	}
 }

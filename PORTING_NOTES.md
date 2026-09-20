@@ -1,15 +1,15 @@
-# Locks Mod Porting Notes: 1.16.5 → 1.20.1
+# Locks Mod Porting Notes: 1.16.5 → 1.21.1
 
 ## Build System
 - ForgeGradle 4.1 → 6.0, Gradle 8.1.1
-- Java 8 → Java 17
-- Forge 1.16.5-36.1.4 → 1.20.1-47.2.0
+- Java 8 → Java 21
+- Forge 1.16.5-36.1.4 → 1.21.1-52.1.2
 - Mixin setup via `mixingradle 0.7-SNAPSHOT` + `annotationProcessor` (same plugins, updated versions)
-- pack_format 6 → 15
-- Must set `JAVA_HOME` to JDK 17 if other JDKs are on PATH
+- pack_format 6 → 34
+- Must set `JAVA_HOME` to JDK 21 if other JDKs are on PATH
 
 ## Class Renames (Major)
-| 1.16.5 | 1.20.1 |
+| 1.16.5 | 1.21.1 |
 |--------|--------|
 | World | Level |
 | ServerWorld | ServerLevel |
@@ -99,7 +99,7 @@
 
 ## Mixin Targets
 - 4 loot-related mixins deleted (replaced by event)
-- 14 mixins renamed to match 1.20.1 class names
+- Mixins renamed to match 1.21.1 class names
 - Method descriptors simplified to bare names for better SRG mapping compatibility
 - `StructureTemplate.fillFromWorld` 3rd param changed from `BlockPos` to `Vec3i`
 - `StructureTemplate.load` gained `HolderGetter<Block>` parameter

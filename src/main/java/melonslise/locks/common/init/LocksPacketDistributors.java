@@ -16,7 +16,7 @@ public final class LocksPacketDistributors
 			// Merge all streams into one
 			// Remove duplicate players
 			// Send packet
-			s.get()
+			s
 				.flatMap(chunk -> ((ServerChunkCache) chunk.getLevel().getChunkSource()).chunkMap.getPlayers(chunk.getPos(), false).stream())
 				.distinct()
 				.forEach(p -> p.connection.send(pkt));

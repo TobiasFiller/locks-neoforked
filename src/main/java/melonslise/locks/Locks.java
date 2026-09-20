@@ -7,6 +7,7 @@ import melonslise.locks.common.config.LocksClientConfig;
 import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksBlocks;
+import melonslise.locks.common.init.LocksConditionSerializers;
 import melonslise.locks.common.init.LocksCreativeTabs;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LocksFeatures;
@@ -19,7 +20,7 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig.Type;
 
-@Mod(Locks.ID)
+@Mod("locks")
 public final class Locks
 {
 	public static final String ID = "locks";
@@ -40,6 +41,7 @@ public final class Locks
 		LocksFeatures.register();
 		LocksMenuTypes.register();
 		LocksRecipeSerializers.register();
+		LocksConditionSerializers.register();
 		LocksCreativeTabs.register();
 	}
 }

@@ -17,7 +17,7 @@ public final class LocksItemModelsProperties
 
 	public static void register()
 	{
-		ItemProperties.register(LocksItems.KEY_RING.get(), new ResourceLocation(Locks.ID, "keys"), (stack, level, entity, seed) ->
+		ItemProperties.register(LocksItems.KEY_RING.get(), ResourceLocation.fromNamespaceAndPath(Locks.ID, "keys"), (stack, level, entity, seed) ->
 		{
 			return stack.getCapability(ForgeCapabilities.ITEM_HANDLER)
 				.map(inv ->
@@ -31,7 +31,7 @@ public final class LocksItemModelsProperties
 				.orElse(0f);
 		});
 
-		ResourceLocation id = new ResourceLocation(Locks.ID, "open");
+		ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Locks.ID, "open");
 		ClampedItemPropertyFunction getter = (stack, level, entity, seed) -> LockItem.isOpen(stack) ? 1f : 0f;
 
 		// Register the "open" property for all data-driven locks

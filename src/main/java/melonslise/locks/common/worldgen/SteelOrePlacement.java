@@ -2,7 +2,7 @@ package melonslise.locks.common.worldgen;
 
 import java.util.stream.Stream;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 
 import melonslise.locks.common.init.LocksPlacements;
 import melonslise.locks.common.steel.NativeSteelPolicy;
@@ -23,7 +23,7 @@ import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
  */
 public class SteelOrePlacement extends PlacementModifier
 {
-	public static final Codec<SteelOrePlacement> CODEC = Codec.unit(SteelOrePlacement::new);
+	public static final MapCodec<SteelOrePlacement> CODEC = MapCodec.unit(SteelOrePlacement::new);
 
 	public SteelOrePlacement() {}
 

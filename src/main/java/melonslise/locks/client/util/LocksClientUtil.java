@@ -1,12 +1,7 @@
 package melonslise.locks.client.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -95,62 +90,11 @@ public final class LocksClientUtil
 	public static void blitTexture(GuiGraphics guiGraphics, ResourceLocation texture, float x, float y, int u, int v, int width, int height, int texWidth, int texHeight, float alpha)
 	{
 		RenderSystem.enableBlend();
+		RenderSystem.defaultBlendFunc();
 		RenderSystem.setShaderColor(1f, 1f, 1f, alpha);
 		guiGraphics.blit(texture, (int) x, (int) y, u, v, width, height, texWidth, texHeight);
 		RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
-	}
-
-	public static void texture(PoseStack mtx, float x, float y, int u, int v, int width, int height, int texWidth, int texHeight, float alpha) // FIXME Cant batch like the others? Why? ;-;
-	{
-		Matrix4f last = mtx.last().pose();
-		float f = 1f / texWidth;
-		float f1 = 1f / texHeight;
-
-		BufferBuilder buf = Tesselator.getInstance().getBuilder();
-		RenderSystem.setShader(net.minecraft.client.renderer.GameRenderer::getPositionTexColorShader);
-		buf.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-		buf.vertex(last, x, y + height, 0f).uv(u * f, (v + height) * f1).color(1f, 1f, 1f, alpha).endVertex();
-		buf.vertex(last, x + width, y + height, 0f).uv((u + width) * f, (v + height) * f1).color(1f, 1f, 1f, alpha).endVertex();
-		buf.vertex(last, x + width, y, 0f).uv((u + width) * f,  v * f1).color(1f, 1f, 1f, alpha).endVertex();
-		buf.vertex(last, x, y, 0f).uv(u * f, v * f1).color(1f, 1f, 1f, alpha).endVertex();
-		BufferUploader.drawWithShader(buf.end());
-	}
-
-	// https://stackoverflow.com/questions/7854043/drawing-rectangle-between-two-points-with-arbitrary-width
-	public static void line(BufferBuilder buf, PoseStack mtx, float x1, float y1, float x2, float y2, float width, float r, float g, float b, float a)
-	{
-		Matrix4f last = mtx.last().pose();
-		// Construct perpendicular
-		float pX = y2 - y1;
-		float pY = x1 - x2;
-		// Normalize and scale by half width
-		float pL = Mth.sqrt(pX * pX + pY * pY);
-		pX *= width / 2f / pL;
-		pY *= width / 2f / pL;
-
-		buf.vertex(last, x1 + pX, y1 + pY, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x1 - pX, y1 - pY, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x2 - pX, y2 - pY, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x2 + pX, y2 + pY, 0f).color(r, g, b, a).endVertex();
-	}
-
-	public static void square(BufferBuilder buf, PoseStack mtx, float x, float y, float length, float r, float g, float b, float a)
-	{
-		Matrix4f last = mtx.last().pose();
-		length /= 2f;
-		buf.vertex(last, x - length, y - length, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x - length, y + length, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x + length, y + length, 0f).color(r, g, b, a).endVertex();
-		buf.vertex(last, x + length, y - length, 0f).color(r, g, b, a).endVertex();
-	}
-
-	public static void vGradient(BufferBuilder bld, PoseStack mtx, int x1, int y1, int x2, int y2, float r1, float g1, float b1, float a1, float r2, float g2, float b2, float a2)
-	{
-		Matrix4f last = mtx.last().pose();
-		bld.vertex(last, x2, y1, 0f).color(r1, g1, b1, a1).endVertex();
-		bld.vertex(last, x1, y1, 0f).color(r1, g1, b1, a1).endVertex();
-		bld.vertex(last, x1, y2, 0f).color(r2, g2, b2, a2).endVertex();
-		bld.vertex(last, x2, y2, 0f).color(r2, g2, b2, a2).endVertex();
+		RenderSystem.disableBlend();
 	}
 
 	public static float lerp(float start, float end, float progress)

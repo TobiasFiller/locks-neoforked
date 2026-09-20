@@ -7,6 +7,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import melonslise.locks.Locks;
 import melonslise.locks.common.util.Lockable;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +19,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
  */
 public class LockableStorage implements ILockableStorage
 {
-	public static final ResourceLocation ID = new ResourceLocation(Locks.ID, "lockable_storage");
+	public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "lockable_storage");
 
 	public final LevelChunk chunk;
 
@@ -71,7 +72,7 @@ public class LockableStorage implements ILockableStorage
 	}
 
 	@Override
-	public ListTag serializeNBT()
+	public ListTag serializeNBT(HolderLookup.Provider provider)
 	{
 		ListTag list = new ListTag();
 		synchronized(this.mutex)
@@ -83,7 +84,7 @@ public class LockableStorage implements ILockableStorage
 	}
 
 	@Override
-	public void deserializeNBT(ListTag nbt)
+	public void deserializeNBT(HolderLookup.Provider provider, ListTag nbt)
 	{
 		// Pure chunk-local hydration. This must be safe to run off the main server thread, because async
 		// chunk mods (e.g. C2ME) deserialize chunk capabilities on worker threads. It therefore NEVER

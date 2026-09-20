@@ -28,7 +28,7 @@ public class LockableInfo
 		int trIdx = nbt.getByte(Lockable.KEY_TRANSFORM) & 0xFF;
 		Transform[] transforms = Transform.values();
 		Transform tr = trIdx < transforms.length ? transforms[trIdx] : transforms[0];
-		return new LockableInfo(Cuboid6i.fromNbt(nbt.getCompound(Lockable.KEY_BB)), Lock.fromNbt(nbt.getCompound(Lockable.KEY_LOCK)), tr, ItemStack.of(nbt.getCompound(Lockable.KEY_STACK)), nbt.getInt(Lockable.KEY_ID));
+		return new LockableInfo(Cuboid6i.fromNbt(nbt.getCompound(Lockable.KEY_BB)), Lock.fromNbt(nbt.getCompound(Lockable.KEY_LOCK)), tr, ItemStackNbt.parse(net.minecraft.core.RegistryAccess.EMPTY, nbt.getCompound(Lockable.KEY_STACK)), nbt.getInt(Lockable.KEY_ID));
 	}
 
 	public static CompoundTag toNbt(LockableInfo lkb)
@@ -37,7 +37,7 @@ public class LockableInfo
 		nbt.put(Lockable.KEY_BB, Cuboid6i.toNbt(lkb.bb));
 		nbt.put(Lockable.KEY_LOCK, Lock.toNbt(lkb.lock));
 		nbt.putByte(Lockable.KEY_TRANSFORM, (byte) lkb.tr.ordinal());
-		nbt.put(Lockable.KEY_STACK, lkb.stack.serializeNBT());
+		nbt.put(Lockable.KEY_STACK, ItemStackNbt.save(net.minecraft.core.RegistryAccess.EMPTY, lkb.stack));
 		nbt.putInt(Lockable.KEY_ID, lkb.id);
 		return nbt;
 	}

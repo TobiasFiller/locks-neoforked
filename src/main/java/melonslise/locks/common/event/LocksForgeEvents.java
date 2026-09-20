@@ -51,7 +51,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.npc.VillagerTrades;
@@ -88,7 +87,6 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.network.NetworkHooks;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
@@ -105,7 +103,7 @@ public final class LocksForgeEvents
 	// gets to tell the server which mode it is playing.
 	private static void openPicking(Player player, Lockable lkb, LockPickingMode mode)
 	{
-		NetworkHooks.openScreen((ServerPlayer) player,
+		((ServerPlayer) player).openMenu(
 			new LockPickingContainer.Provider(InteractionHand.MAIN_HAND, mode, lkb),
 			new LockPickingContainer.Writer(InteractionHand.MAIN_HAND, mode, lkb));
 	}
@@ -159,7 +157,7 @@ public final class LocksForgeEvents
 	{
 		if (server == null)
 			return;
-		LocksSavedData data = server.overworld().getDataStorage().computeIfAbsent(LocksSavedData::load, LocksSavedData::new, LocksSavedData.NAME);
+		LocksSavedData data = server.overworld().getDataStorage().computeIfAbsent(LocksSavedData.factory(), LocksSavedData.NAME);
 		long salt = data.getOrCreateComboSalt();
 		Lock.setMigrationSalt(salt);
 		if (salt == 0L)
@@ -208,7 +206,7 @@ public final class LocksForgeEvents
 		}
 	}
 
-	private static final Gson LOOT_GSON = net.minecraft.world.level.storage.loot.Deserializers.createLootTableSerializer().create();
+	private static final Gson LOOT_GSON = new Gson();
 
 	@SubscribeEvent
 	public static void onLootTableLoad(LootTableLoadEvent e)
@@ -216,7 +214,7 @@ public final class LocksForgeEvents
 		ResourceLocation name = e.getName();
 		if(!LocksServerConfig.matchesLootTablePattern(name))
 			return;
-		ResourceLocation injectLoc = new ResourceLocation(Locks.ID, "loot_tables/inject/" + name.getPath() + ".json");
+		ResourceLocation injectLoc = ResourceLocation.fromNamespaceAndPath(Locks.ID, "loot_tables/inject/" + name.getPath() + ".json");
 		net.minecraft.server.MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 		if(server == null)
 			return;
@@ -452,7 +450,7 @@ public final class LocksForgeEvents
 			if(!world.isClientSide && lockChunk != null && player instanceof ServerPlayer sp)
 			{
 				LevelChunk syncChunk = lockChunk;
-				LocksNetwork.MAIN.send(PacketDistributor.PLAYER.with(() -> sp), new AddLockableToChunkPacket(lkb, syncChunk));
+				LocksNetwork.MAIN.send(new AddLockableToChunkPacket(lkb, syncChunk), PacketDistributor.PLAYER.with(sp));
 			}
 
 			if(LocksTagHelper.isLockPick(stack))
@@ -465,7 +463,7 @@ public final class LocksForgeEvents
 				}
 				else
 				{
-					int autoPick = LocksServerConfig.ENABLE_AUTO_PICK.get() ? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.AUTO_PICK.get(), lkb.stack) : 0;
+					int autoPick = LocksServerConfig.ENABLE_AUTO_PICK.get() ? LocksEnchantments.level(LocksEnchantments.AUTO_PICK, lkb.stack) : 0;
 					if(autoPick > 0 && !world.isClientSide && world.getRandom().nextFloat() < autoPick * 0.10f)
 					{
 						// Auto-Pick triggered: instant unlock without minigame
@@ -654,7 +652,7 @@ public final class LocksForgeEvents
 						// Optional theft punishment: shock the player for interacting with a locked block without a key (off by default)
 						ShockingHelper.tryShock(player, lkb.stack, Vec3.atCenterOf(pos), ShockingHelper.Trigger.UNAUTHORIZED_INTERACTION);
 						boolean keyBlank = stack.getItem() == LocksItems.KEY_BLANK.get();
-						if(!LocksServerConfig.ENABLE_SILENT.get() || EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.SILENT.get(), lkb.stack) == 0)
+						if(!LocksServerConfig.ENABLE_SILENT.get() || LocksEnchantments.level(LocksEnchantments.SILENT, lkb.stack) == 0)
 						{
 							world.playSound(player, pos, LocksSoundEvents.LOCK_RATTLE.get(), SoundSource.BLOCKS, 1f, 1f);
 							if(world.isClientSide && !keyBlank && LocksClientConfig.DEAF_MODE.get())
@@ -851,7 +849,7 @@ public final class LocksForgeEvents
 		ItemStack curioRing = CuriosHelper.findAnyKeyRing(player);
 		if (curioRing.isEmpty())
 			return;
-		NetworkHooks.openScreen((ServerPlayer) player,
+		((ServerPlayer) player).openMenu(
 			new KeyRingContainer.Provider(curioRing),
 			new KeyRingContainer.CurioWriter());
 		e.setCanceled(true);

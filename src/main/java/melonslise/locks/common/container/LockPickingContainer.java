@@ -98,9 +98,9 @@ public class LockPickingContainer extends AbstractContainerMenu
 		Lockable.State state = lkb.getLockState(player.level());
 		this.pos = state == null ? lkb.bb.center() : state.pos;
 
-		this.shocking = LocksServerConfig.ENABLE_SHOCKING.get() ? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.SHOCKING.get(), this.lockable.stack) : 0;
-		this.sturdy = LocksServerConfig.ENABLE_STURDY.get() ? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.STURDY.get(), this.lockable.stack) : 0;
-		this.complexity = LocksServerConfig.ENABLE_COMPLEXITY.get() ? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.COMPLEXITY.get(), this.lockable.stack) : 0;
+		this.shocking = LocksServerConfig.ENABLE_SHOCKING.get() ? LocksEnchantments.level(LocksEnchantments.SHOCKING, this.lockable.stack) : 0;
+		this.sturdy = LocksServerConfig.ENABLE_STURDY.get() ? LocksEnchantments.level(LocksEnchantments.STURDY, this.lockable.stack) : 0;
+		this.complexity = LocksServerConfig.ENABLE_COMPLEXITY.get() ? LocksEnchantments.level(LocksEnchantments.COMPLEXITY, this.lockable.stack) : 0;
 
 		// Syncs the player inventory
 
@@ -167,7 +167,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 	{
 		TryPinResultPacket pkt = new TryPinResultPacket(this.containerId, sequence, pin, progress, correct, reset, terminal);
 		this.lastResult = pkt;
-		LocksNetwork.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) this.player), pkt);
+		LocksNetwork.MAIN.send(pkt, PacketDistributor.PLAYER.with((ServerPlayer) this.player));
 	}
 
 	@Override
@@ -196,7 +196,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 		if(sequence <= this.lastSequence)
 		{
 			if(this.lastResult != null && sequence == this.lastSequence)
-				LocksNetwork.MAIN.send(PacketDistributor.PLAYER.with(() -> (ServerPlayer) this.player), this.lastResult);
+				LocksNetwork.MAIN.send(this.lastResult, PacketDistributor.PLAYER.with((ServerPlayer) this.player));
 			return;
 		}
 		Level level = this.player.level();
@@ -248,7 +248,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 				// and this already yields full volume.
 				ItemStack pickStack = this.player.getItemInHand(this.hand);
 				float failVolume = LocksServerConfig.ENABLE_QUIET_HAND.get()
-					&& EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.QUIET_HAND.get(), pickStack) > 0
+					&& LocksEnchantments.level(LocksEnchantments.QUIET_HAND, pickStack) > 0
 					? (float) (double) LocksServerConfig.QUIET_HAND_VOLUME.get() : 1f;
 				this.player.level().playSound(null, this.pos.x, this.pos.y, this.pos.z, LocksSoundEvents.PIN_FAIL.get(), SoundSource.BLOCKS, failVolume, 1f);
 			}
@@ -288,18 +288,18 @@ public class LockPickingContainer extends AbstractContainerMenu
 		if (LocksServerConfig.NETHERITE_PICK_UNBREAKABLE.get()
 			&& LockPickItem.isNetheriteLockPick(pickStack))
 			return false;
-		// A pick registered without a durability pool (definition durability 0, or a third-party tagged
-		// item that is not damageable) simply never wears down.
+		// A pick definition with durability 0, or a third-party tagged item without lockpick stats, never
+		// wears down.
 		if (!LockPickItem.usesDurability(pickStack))
 			return false;
 		// Last Catch is the only die roll left anywhere in this path, and it can only ever SAVE durability.
 		// It never breaks anything, so a pick still dies exactly when its pool hits zero and not before.
 		int lastCatch = LocksServerConfig.ENABLE_LAST_CATCH.get()
-			? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.LAST_CATCH.get(), pickStack) : 0;
+			? LocksEnchantments.level(LocksEnchantments.LAST_CATCH, pickStack) : 0;
 		if (lastCatch > 0 && player.level().getRandom().nextFloat() < (float) (double) LocksServerConfig.LAST_CATCH_SAVE_CHANCE.get())
 			return false;
 		int finesse = LocksServerConfig.ENABLE_FINESSE.get()
-			? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.FINESSE.get(), pickStack) : 0;
+			? LocksEnchantments.level(LocksEnchantments.FINESSE, pickStack) : 0;
 		int wear = LockPickWearPolicy.wearFor(
 			LockTypeRegistry.getLockStats(this.lockable.stack.getItem()).pickWear(),
 			this.isNearMiss(pin),
@@ -309,7 +309,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 			finesse,
 			LocksServerConfig.FINESSE_WEAR_REDUCTION_PER_LEVEL.get());
 		boolean pickBroke = LockPickItem.damagePick(pickStack, player, this.hand, wear);
-		// damagePick observes hurtAndBreak's actual result, including Unbreaking and creative mode, and only
+		// damagePick observes Unbreaking and creative mode, and only
 		// removes the one active pick from a stack. Never predict a break from damage + wear.
 		if (!pickBroke)
 			return false;

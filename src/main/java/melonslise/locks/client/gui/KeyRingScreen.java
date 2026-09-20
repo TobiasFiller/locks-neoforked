@@ -12,7 +12,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class KeyRingScreen extends AbstractContainerScreen<KeyRingContainer>
 {
-	public static final ResourceLocation TEXTURE = new ResourceLocation("textures/gui/container/generic_54.png");
+	public static final ResourceLocation TEXTURE = ResourceLocation.parse("textures/gui/container/generic_54.png");
 
 	public KeyRingScreen(KeyRingContainer cont, Inventory inv, Component title)
 	{
@@ -24,7 +24,7 @@ public class KeyRingScreen extends AbstractContainerScreen<KeyRingContainer>
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
 	{
-		this.renderBackground(guiGraphics);
+		this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 		super.render(guiGraphics, mouseX, mouseY, partialTick);
 		this.renderTooltip(guiGraphics, mouseX, mouseY);
 	}

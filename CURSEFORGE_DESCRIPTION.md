@@ -1,6 +1,6 @@
 # Locks Reforged
 
-**An unofficial port of the Locks mod by [Melonslise](https://github.com/Melonslise) to Minecraft Forge 1.20.1.**
+**An unofficial port of the Locks mod by [Melonslise](https://github.com/Melonslise) to Minecraft Forge 1.21.1.**
 
 Locks is a small but unique mod that lets you attach flexible, universal locks to any block in the game — including blocks from other mods. Protect your doors, chests, furnaces, and more with a dynamic locking system and an interactive lock picking minigame.
 
@@ -181,8 +181,8 @@ Drop a JSON file into the config folder to register a brand new lock or lock pic
 The filename becomes the item's registry name under the `locks:` namespace (e.g., `netherite_lock.json` registers as `locks:netherite_lock`). Config-folder items override JAR-bundled items of the same name, so you can also use this to replace built-in stats.
 
 **Important:** Custom items registered this way will appear in-game automatically, but they will be invisible and uncraftable without:
-- A **resource pack** providing a model and texture (`assets/locks/models/item/<name>.json`, `assets/locks/textures/item/<name>.png`), and optionally a lock picking screen texture (`assets/locks/textures/gui/<name>.png`, which falls back to the iron lock's)
-- A **datapack** providing a crafting recipe (`data/locks/recipes/<name>.json`) and adding the item to the appropriate tag (`data/locks/tags/items/locks.json` or `lock_picks.json`)
+- A **resource pack** providing a model and texture (`assets/locks/models/item/<name>.json`, `assets/locks/textures/item/<name>.png`), and optionally a lock picking screen texture (`assets/locks/textures/lockpicking/<name>.png`, which falls back to the iron lock's)
+- A **datapack** providing a crafting recipe (`data/locks/recipe/<name>.json`) and adding the item to the appropriate tag (`data/locks/tags/item/locks.json` or `lock_picks.json`)
 
 The mod creates example files at `config/locks/lock_types/_example.json.disabled` and `config/locks/lockpick_types/_example.json.disabled` on first launch for reference.
 
@@ -283,11 +283,11 @@ All settings are customizable via config files. Note that `locks-server.toml` is
 
 ## Requirements
 
-- Minecraft **1.20.1**
-- Forge **47.2.0** or later
-- Java **17**
+- Minecraft **1.21.1**
+- Forge **52.1.2** or later
+- Java **21**
 
-Optional: **Curios** (5.14.0+), **Carry On** (2.1.0+). Neither is required.
+Optional: **Curios** (8.x API), **Carry On** (2.2.2+ for Forge 1.21.1). Neither is required.
 
 **Multiplayer note:** client and server must run the same version — the lock picking network protocol is version-checked at the handshake, and a mismatched connection is refused cleanly rather than misbehaving later.
 

@@ -11,7 +11,6 @@ import melonslise.locks.common.init.LocksTagHelper;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -55,7 +54,7 @@ public final class ShockingHelper
 	{
 		if(!LocksServerConfig.ENABLE_SHOCKING.get())
 			return 0;
-		int level = EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.SHOCKING.get(), lockStack);
+		int level = LocksEnchantments.level(LocksEnchantments.SHOCKING, lockStack);
 		if(level <= 0 && !LocksServerConfig.SHOCKING_REQUIRES_ENCHANTMENT.get())
 			level = 1;
 		return level;
@@ -123,10 +122,10 @@ public final class ShockingHelper
 		int grounded = 0;
 		ItemStack main = player.getMainHandItem();
 		if(LocksTagHelper.isLockPick(main))
-			grounded = Math.max(grounded, EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.GROUNDED.get(), main));
+			grounded = Math.max(grounded, LocksEnchantments.level(LocksEnchantments.GROUNDED, main));
 		ItemStack off = player.getOffhandItem();
 		if(LocksTagHelper.isLockPick(off))
-			grounded = Math.max(grounded, EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.GROUNDED.get(), off));
+			grounded = Math.max(grounded, LocksEnchantments.level(LocksEnchantments.GROUNDED, off));
 		return grounded;
 	}
 }

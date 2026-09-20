@@ -7,19 +7,25 @@ import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LocksTagHelper;
 import melonslise.locks.common.init.LockTypeRegistry;
+import melonslise.locks.common.util.ItemStackNbt;
 import melonslise.locks.common.util.Lockable;
+import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.network.chat.Component;
-import net.minecraft.ChatFormatting;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.event.ForgeEventFactory;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -28,7 +34,8 @@ public class LockPickItem extends Item
 {
 	public static final int MAX_STACK_SIZE = 64;
 	public static final Component TOO_COMPLEX_MESSAGE = Component.translatable(Locks.ID + ".status.too_complex");
-	public static final ResourceLocation NETHERITE_LOCK_PICK_ID = new ResourceLocation(Locks.ID, "netherite_lock_pick");
+	public static final ResourceLocation NETHERITE_LOCK_PICK_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "netherite_lock_pick");
+	public static final String KEY_DAMAGE = "LockPickDamage";
 
 	public LockPickItem(Properties props)
 	{
@@ -45,8 +52,8 @@ public class LockPickItem extends Item
 	{
 		if(stack.isEmpty())
 			return 0f;
-		CompoundTag nbt = stack.getTag();
-		if(nbt != null && nbt.contains(KEY_STRENGTH))
+		CompoundTag nbt = ItemStackNbt.getCustomData(stack);
+		if(nbt.contains(KEY_STRENGTH))
 			return nbt.getFloat(KEY_STRENGTH);
 		return LockTypeRegistry.getLockPickStats(stack.getItem()).strength();
 	}
@@ -55,7 +62,7 @@ public class LockPickItem extends Item
 	{
 		float strength = getStrength(stack);
 		if(LocksServerConfig.ENABLE_ATTUNEMENT.get())
-			strength += EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.ATTUNEMENT.get(), stack)
+			strength += LocksEnchantments.level(LocksEnchantments.ATTUNEMENT, stack)
 				* (float) (double) LocksServerConfig.ATTUNEMENT_STRENGTH_PER_LEVEL.get();
 		return strength > cmp * 0.25f;
 	}
@@ -63,14 +70,29 @@ public class LockPickItem extends Item
 	public static boolean canPick(ItemStack stack, Lockable lkb)
 	{
 		return canPick(stack, LocksServerConfig.ENABLE_COMPLEXITY.get()
-			? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.COMPLEXITY.get(), lkb.stack) : 0);
+			? LocksEnchantments.level(LocksEnchantments.COMPLEXITY, lkb.stack) : 0);
 	}
 
-	// Every pick tier carries durability as of 1.7.3, so this is no longer netherite-only. A definition
-	// that sets durability to 0 registers a pick with no pool at all, which simply never wears down.
+	// Lockpicks are stackable, so they cannot use vanilla item durability in 1.21. The data-driven
+	// durability value is instead applied through custom data while picking locks.
 	public static boolean usesDurability(ItemStack stack)
 	{
-		return stack.isDamageableItem();
+		return getMaxPickDamage(stack) > LockTypeRegistry.UNBREAKABLE_DURABILITY;
+	}
+
+	public static int getPickDamage(ItemStack stack)
+	{
+		if(stack.isEmpty())
+			return 0;
+		CompoundTag nbt = ItemStackNbt.getCustomData(stack);
+		return Math.max(0, nbt.getInt(KEY_DAMAGE));
+	}
+
+	public static int getMaxPickDamage(ItemStack stack)
+	{
+		if(stack.isEmpty())
+			return 0;
+		return LockTypeRegistry.getLockPickStats(stack.getItem()).durability();
 	}
 
 	/**
@@ -84,36 +106,31 @@ public class LockPickItem extends Item
 	 */
 	public static boolean damagePick(ItemStack stack, Player player, InteractionHand hand, int amount)
 	{
+		if(amount <= 0 || !usesDurability(stack))
+			return false;
+
 		if(stack.getCount() <= 1)
-		{
-			int countBefore = stack.getCount();
-			stack.hurtAndBreak(amount, player, broken -> broken.broadcastBreakEvent(hand));
-			return stack.getCount() < countBefore;
-		}
+			return damageSinglePick(stack, player, hand, amount);
 
 		ItemStack wornPick = stack.copy();
 		wornPick.setCount(1);
-		int damageBefore = wornPick.getDamageValue();
-		wornPick.hurtAndBreak(amount, player, broken -> broken.broadcastBreakEvent(hand));
+		int damageBefore = getPickDamage(wornPick);
+		boolean broke = damageSinglePick(wornPick, player, hand, amount);
 
-		if(wornPick.isEmpty())
+		if(broke)
 		{
 			stack.shrink(1);
-			// A multi-item stack represents one active pick followed by pristine picks. Vanilla resets this
-			// after a singleton breaks; do the same for the pristine remainder of our stack.
-			if(!stack.isEmpty())
-				stack.setDamageValue(0);
 			return true;
 		}
 
 		// Creative mode and Unbreaking can prevent all requested damage. Keep the stack together unless
 		// this particular pick actually acquired wear.
-		if(wornPick.getDamageValue() == damageBefore)
+		if(getPickDamage(wornPick) == damageBefore)
 			return false;
 
 		ItemStack pristineRemainder = stack.copy();
 		pristineRemainder.shrink(1);
-		pristineRemainder.setDamageValue(0);
+		clearPickDamage(pristineRemainder);
 		player.setItemInHand(hand, wornPick);
 		// This merges with another pristine stack when possible and drops the remainder beside the player
 		// when every inventory slot is full, so splitting can never silently delete picks.
@@ -121,14 +138,68 @@ public class LockPickItem extends Item
 		return false;
 	}
 
+	private static boolean damageSinglePick(ItemStack stack, Player player, InteractionHand hand, int amount)
+	{
+		if(!(player.level() instanceof ServerLevel level))
+			return false;
+		if(player instanceof ServerPlayer serverPlayer && serverPlayer.hasInfiniteMaterials())
+			return false;
+		amount = EnchantmentHelper.processDurabilityChange(level, stack, amount);
+		if(amount <= 0)
+			return false;
+
+		int damage = getPickDamage(stack) + amount;
+		int maxDamage = getMaxPickDamage(stack);
+		if(damage >= maxDamage)
+		{
+			EquipmentSlot slot = hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
+			Item item = stack.getItem();
+			stack.shrink(1);
+			ForgeEventFactory.onPlayerDestroyItem(player, stack, slot);
+			player.onEquippedItemBroken(item, slot);
+			return true;
+		}
+		setPickDamage(stack, damage);
+		return false;
+	}
+
+	private static void setPickDamage(ItemStack stack, int damage)
+	{
+		ItemStackNbt.updateCustomData(stack, nbt -> nbt.putInt(KEY_DAMAGE, Math.max(0, damage)));
+	}
+
+	private static void clearPickDamage(ItemStack stack)
+	{
+		ItemStackNbt.updateCustomData(stack, nbt -> nbt.remove(KEY_DAMAGE));
+	}
+
 	/**
-	 * Forge's stack-sensitive hook overrides the size forced to one by Properties#durability. A pristine
-	 * damageable stack remains mergeable; vanilla already refuses to merge a worn singleton.
+	 * Keeps pristine lockpick stacks at 64. Worn picks carry custom data, so vanilla stack matching keeps
+	 * them separate from pristine stacks.
 	 */
-	@Override
 	public int getMaxStackSize(ItemStack stack)
 	{
 		return MAX_STACK_SIZE;
+	}
+
+	@Override
+	public boolean isBarVisible(ItemStack stack)
+	{
+		return getPickDamage(stack) > 0 && getMaxPickDamage(stack) > 0;
+	}
+
+	@Override
+	public int getBarWidth(ItemStack stack)
+	{
+		return Mth.clamp(Math.round(13.0F - (float) getPickDamage(stack) * 13.0F / (float) getMaxPickDamage(stack)), 0, 13);
+	}
+
+	@Override
+	public int getBarColor(ItemStack stack)
+	{
+		int maxDamage = getMaxPickDamage(stack);
+		float left = maxDamage <= 0 ? 1.0F : Math.max(0.0F, ((float) maxDamage - (float) getPickDamage(stack)) / (float) maxDamage);
+		return Mth.hsvToRgb(left / 3.0F, 1.0F, 1.0F);
 	}
 
 	public static boolean isNetheriteLockPick(ItemStack stack)
@@ -173,9 +244,9 @@ public class LockPickItem extends Item
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void appendHoverText(ItemStack stack, Level world, List<Component> lines, TooltipFlag flag)
+	public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag)
 	{
-		super.appendHoverText(stack, world, lines, flag);
-		lines.add(Component.translatable(Locks.ID + ".tooltip.strength", ItemStack.ATTRIBUTE_MODIFIER_FORMAT.format(getStrength(stack))).withStyle(ChatFormatting.DARK_GREEN));
+		super.appendHoverText(stack, context, lines, flag);
+		lines.add(Component.translatable(Locks.ID + ".tooltip.strength", String.format(java.util.Locale.ROOT, "%.2f", getStrength(stack))).withStyle(ChatFormatting.DARK_GREEN));
 	}
 }

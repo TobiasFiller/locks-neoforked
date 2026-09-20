@@ -1,6 +1,6 @@
 # Locks Reforged
 
-An unofficial port of the **Locks** mod by [Melonslise](https://github.com/Melonslise) to **Minecraft Forge 1.20.1**.
+An unofficial port of the **Locks** mod by [Melonslise](https://github.com/Melonslise) to **Minecraft Forge 1.21.1**.
 
 > Locks is a small, but unique Minecraft mod that introduces flexible and universal locks which can be dynamically attached to multiple blocks of any kind, including other mods, a fun lock picking mechanic as well as lots of other little, but useful tools and utilities.
 
@@ -17,9 +17,9 @@ This port preserves the original mod's license: **Attribution-NonCommercial 3.0 
 
 ## About This Port
 
-The original Locks mod was built for Minecraft 1.16.5 (Forge 36.x). This port updates it to Minecraft 1.20.1 (Forge 47.x) while preserving all original gameplay mechanics, item IDs, config keys, and network protocol.
+The original Locks mod was built for Minecraft 1.16.5 (Forge 36.x). This port updates it to Minecraft 1.21.1 (Forge 52.x) while preserving the original gameplay mechanics, item IDs, config keys, and network protocol where possible.
 
-**Version:** 1.7.3 | **Minecraft:** 1.20.1 | **Forge:** 47.2.0+ | **Java:** 17
+**Version:** 1.7.5 | **Minecraft:** 1.21.1 | **Forge:** 52.1.2+ | **Java:** 21
 
 ## Features
 
@@ -193,7 +193,7 @@ On first launch, the mod creates these directories with a `_example.json.disable
 **Important:** Custom items added via config also need:
 - A model JSON in a resource pack (`assets/locks/models/item/<name>.json`)
 - A texture (`assets/locks/textures/item/<name>.png`)
-- A GUI texture for the lock picking screen (`assets/locks/textures/gui/<name>.png`) — falls back to the iron lock texture if missing
+- A GUI texture for the lock picking screen (`assets/locks/textures/lockpicking/<name>.png`) — falls back to the iron lock texture if missing
 - A recipe (via datapack)
 - Tag entries in `locks:locks` or `locks:lock_picks` (via datapack) for the mod to recognize them
 
@@ -304,7 +304,7 @@ Now a chest worth ~95 gets a **diamond** lock, one worth ~160 gets **netherite**
 
 ## Building from Source
 
-**Requirements:** JDK 17
+**Requirements:** JDK 21
 
 ```bash
 # Clone the repository
@@ -312,18 +312,18 @@ git clone <repo-url>
 cd "Locks Reforged"
 
 # Build the mod JAR
-JAVA_HOME="/path/to/jdk-17" ./gradlew build
+JAVA_HOME="/path/to/jdk-21" ./gradlew build
 
-# Output: build/libs/locks_reforged-1.7.3.jar
+# Output: build/libs/locks_reforged-1.7.5.jar
 
 # Run the development client
-JAVA_HOME="/path/to/jdk-17" ./gradlew runClient
+JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
 ```
 
 ## Installation
 
-1. Install [Minecraft Forge 1.20.1](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html) (47.2.0 or later)
-2. Download `locks_reforged-1.7.3.jar` from the releases
+1. Install [Minecraft Forge 1.21.1](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.21.1.html) (52.1.2 or later)
+2. Download `locks_reforged-1.7.5.jar` from the releases
 3. Place the JAR in your `.minecraft/mods/` folder
 4. Launch Minecraft with the Forge profile
 
@@ -337,7 +337,7 @@ This port involved updating approximately 90 Java source files across the follow
 - **Damage Types** -- Migrated to data-driven damage type system
 - **Rendering** -- Updated to GuiGraphics API and JOML math library
 - **Creative Tabs** -- Migrated from `ItemGroup` to `CreativeModeTab` via `DeferredRegister`
-- **Mixins** -- All 15 mixins updated for 1.20.1 class/method changes, including a workaround for `SignalGetter` interface default methods
+- **Mixins** -- All common mixins updated for 1.21.1 class/method changes
 - **Loot Tables** -- Reimplemented injection via `LootTableLoadEvent`
 
 See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for the full list of changes and current testing status.

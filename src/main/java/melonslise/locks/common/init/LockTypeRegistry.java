@@ -105,7 +105,7 @@ public final class LockTypeRegistry
 				  .forEach(file -> {
 					  String fileName = file.getFileName().toString();
 					  String name = fileName.substring(0, fileName.length() - 5);
-					  ResourceLocation id = new ResourceLocation(Locks.ID, name);
+					  ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Locks.ID, name);
 					  try (InputStream is = Files.newInputStream(file);
 						   Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8))
 					  {
@@ -177,7 +177,7 @@ public final class LockTypeRegistry
 				if (fileName.startsWith("_"))
 					continue; // skip example/template files
 				String name = fileName.substring(0, fileName.length() - 5);
-				ResourceLocation id = new ResourceLocation(Locks.ID, name);
+				ResourceLocation id = ResourceLocation.fromNamespaceAndPath(Locks.ID, name);
 
 				try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8))
 				{
@@ -269,7 +269,7 @@ public final class LockTypeRegistry
 			Locks.LOGGER.warn("TOML config references unknown lockpick: {}", id);
 			return;
 		}
-		// durability is intentionally carried over untouched: it is fixed at item registration.
+		// TOML only overrides strength; durability remains controlled by lockpick definitions/datapacks.
 		LOCKPICK_STATS.put(id, new LockPickStats(strength, base.fireResistant(), base.enchantmentValue(), base.durability()));
 		Locks.LOGGER.debug("Applied TOML config override for lockpick {}", id);
 	}
@@ -279,7 +279,7 @@ public final class LockTypeRegistry
 		for (var entry : overrides.entrySet())
 		{
 			JsonObject json = entry.getValue();
-			ResourceLocation itemId = new ResourceLocation(GsonHelper.getAsString(json, "item"));
+			ResourceLocation itemId = ResourceLocation.parse(GsonHelper.getAsString(json, "item"));
 
 			LockStats base = LOCK_STATS.get(itemId);
 			if (base == null)
@@ -303,7 +303,7 @@ public final class LockTypeRegistry
 		for (var entry : overrides.entrySet())
 		{
 			JsonObject json = entry.getValue();
-			ResourceLocation itemId = new ResourceLocation(GsonHelper.getAsString(json, "item"));
+			ResourceLocation itemId = ResourceLocation.parse(GsonHelper.getAsString(json, "item"));
 
 			LockPickStats base = LOCKPICK_STATS.get(itemId);
 			if (base == null)
@@ -312,14 +312,13 @@ public final class LockTypeRegistry
 				continue;
 			}
 
-			float strength = json.has("strength") ? GsonHelper.getAsFloat(json, "strength") : base.strength();
-			int enchVal = json.has("enchantment_value") ? GsonHelper.getAsInt(json, "enchantment_value") : base.enchantmentValue();
-			// Durability is baked into Item.Properties at registration, long before any datapack loads, so a
-			// datapack cannot move it. Warn rather than reporting a number the item does not actually have.
-			if (json.has("durability"))
-				Locks.LOGGER.warn("Lockpick stat override for {} sets a durability, which cannot change an already-registered item. Use config/locks/lockpick_types instead.", itemId);
+		float strength = json.has("strength") ? GsonHelper.getAsFloat(json, "strength") : base.strength();
+		int enchVal = json.has("enchantment_value") ? GsonHelper.getAsInt(json, "enchantment_value") : base.enchantmentValue();
+		int durability = json.has("durability")
+			? clampWarn(itemId, "durability", GsonHelper.getAsInt(json, "durability"), UNBREAKABLE_DURABILITY, 10000)
+			: base.durability();
 
-			LOCKPICK_STATS.put(itemId, new LockPickStats(strength, base.fireResistant(), enchVal, base.durability()));
+		LOCKPICK_STATS.put(itemId, new LockPickStats(strength, base.fireResistant(), enchVal, durability));
 			Locks.LOGGER.debug("Applied lockpick stat override for {}", itemId);
 		}
 	}

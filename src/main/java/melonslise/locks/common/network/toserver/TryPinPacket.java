@@ -1,12 +1,10 @@
 package melonslise.locks.common.network.toserver;
 
-import java.util.function.Supplier;
-
 import melonslise.locks.common.container.LockPickingContainer;
 import melonslise.locks.common.util.LockSecretPolicy;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 public class TryPinPacket
 {
@@ -42,15 +40,15 @@ public class TryPinPacket
 		buf.writeByte(pkt.pin);
 	}
 
-	public static void handle(TryPinPacket pkt, Supplier<NetworkEvent.Context> ctx)
+	public static void handle(TryPinPacket pkt, CustomPayloadEvent.Context ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
-		ctx.get().enqueueWork(new Runnable()
+		ctx.enqueueWork(new Runnable()
 		{
 			@Override
 			public void run()
 			{
-				ServerPlayer sender = ctx.get().getSender();
+				ServerPlayer sender = ctx.getSender();
 				if(sender == null)
 					return;
 				// instanceof, not getType(): AbstractContainerMenu#getType throws for menus built with a null
@@ -67,6 +65,6 @@ public class TryPinPacket
 				lpc.tryPin(pkt.pin, pkt.containerId, pkt.sequence);
 			}
 		});
-		ctx.get().setPacketHandled(true);
+		ctx.setPacketHandled(true);
 	}
 }

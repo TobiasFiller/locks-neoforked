@@ -3,8 +3,10 @@ package melonslise.locks.common.capability;
 import java.util.concurrent.ThreadLocalRandom;
 
 import melonslise.locks.Locks;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.util.datafix.DataFixTypes;
 
 /*
  * Per-level persistent storage for the lockable id counter.
@@ -30,7 +32,12 @@ public class LocksSavedData extends SavedData
 
 	public LocksSavedData() {}
 
-	public static LocksSavedData load(CompoundTag nbt)
+	public static SavedData.Factory<LocksSavedData> factory()
+	{
+		return new SavedData.Factory<>(LocksSavedData::new, LocksSavedData::load, DataFixTypes.SAVED_DATA_MAP_INDEX);
+	}
+
+	public static LocksSavedData load(CompoundTag nbt, HolderLookup.Provider provider)
 	{
 		LocksSavedData data = new LocksSavedData();
 		data.lastId = nbt.getInt(KEY_LAST_ID);
@@ -39,7 +46,7 @@ public class LocksSavedData extends SavedData
 	}
 
 	@Override
-	public CompoundTag save(CompoundTag nbt)
+	public CompoundTag save(CompoundTag nbt, HolderLookup.Provider provider)
 	{
 		nbt.putInt(KEY_LAST_ID, this.lastId);
 		nbt.putLong(KEY_COMBO_SALT, this.comboSalt);

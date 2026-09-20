@@ -23,11 +23,6 @@ public class TextureInfo
 		this.canvasHeight = canvasHeight;
 	}
 
-	public void draw(PoseStack mtx, float x, float y, float alpha)
-	{
-		LocksClientUtil.texture(mtx, x, y, this.startX, this.startY, this.width, this.height, this.canvasWidth, this.canvasHeight, alpha);
-	}
-
 	public void draw(GuiGraphics guiGraphics, ResourceLocation texture, float x, float y, float alpha)
 	{
 		LocksClientUtil.blitTexture(guiGraphics, texture, x, y, this.startX, this.startY, this.width, this.height, this.canvasWidth, this.canvasHeight, alpha);

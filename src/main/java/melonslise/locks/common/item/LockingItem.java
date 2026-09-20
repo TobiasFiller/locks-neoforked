@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 
 import melonslise.locks.Locks;
 import melonslise.locks.common.config.LocksServerConfig;
+import melonslise.locks.common.util.ItemStackNbt;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.Item;
@@ -31,15 +32,19 @@ public class LockingItem extends Item
 
 	public static ItemStack copyId(ItemStack from, ItemStack to)
 	{
-		to.getOrCreateTag().putInt(KEY_ID, getOrSetId(from));
+		ItemStackNbt.updateCustomData(to, nbt -> nbt.putInt(KEY_ID, getOrSetId(from)));
 		return to;
 	}
 
 	public static int getOrSetId(ItemStack stack)
 	{
-		CompoundTag nbt = stack.getOrCreateTag();
+		CompoundTag nbt = ItemStackNbt.getCustomData(stack);
 		if(!nbt.contains(KEY_ID, Tag.TAG_INT))
-			nbt.putInt(KEY_ID, ThreadLocalRandom.current().nextInt());
+		{
+			int id = ThreadLocalRandom.current().nextInt();
+			ItemStackNbt.updateCustomData(stack, tag -> tag.putInt(KEY_ID, id));
+			return id;
+		}
 		return nbt.getInt(KEY_ID);
 	}
 
@@ -48,8 +53,7 @@ public class LockingItem extends Item
 	// every mistyped stack onto the single credential 0 — one key that opens every such lock.
 	public static boolean hasId(ItemStack stack)
 	{
-		CompoundTag nbt = stack.getTag();
-		return nbt != null && nbt.contains(KEY_ID, Tag.TAG_INT);
+		return ItemStackNbt.contains(stack, KEY_ID, Tag.TAG_INT);
 	}
 
 	// Read-only counterpart to getOrSetId, which writes a random id into whatever stack it is handed —
@@ -57,7 +61,7 @@ public class LockingItem extends Item
 	// empty or might legitimately have no id yet.
 	public static OptionalInt readId(ItemStack stack)
 	{
-		return hasId(stack) ? OptionalInt.of(stack.getTag().getInt(KEY_ID)) : OptionalInt.empty();
+		return hasId(stack) ? OptionalInt.of(ItemStackNbt.getCustomData(stack).getInt(KEY_ID)) : OptionalInt.empty();
 	}
 
 	// Locks and keys get their id the moment they are crafted, so a lock taken straight from a crafting
@@ -80,9 +84,9 @@ public class LockingItem extends Item
 
 	@OnlyIn(Dist.CLIENT)
 	@Override
-	public void appendHoverText(ItemStack stack, @Nullable Level world, List<Component> lines, TooltipFlag flag)
+	public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> lines, TooltipFlag flag)
 	{
 		if(!LocksServerConfig.HIDE_LOCK_ID.get() && hasId(stack))
-			lines.add(Component.translatable(Locks.ID + ".tooltip.id", ItemStack.ATTRIBUTE_MODIFIER_FORMAT.format(getOrSetId(stack))).withStyle(ChatFormatting.DARK_GREEN));
+			lines.add(Component.translatable(Locks.ID + ".tooltip.id", Integer.toString(getOrSetId(stack))).withStyle(ChatFormatting.DARK_GREEN));
 	}
 }

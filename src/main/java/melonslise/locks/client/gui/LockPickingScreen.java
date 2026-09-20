@@ -31,6 +31,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 
 @OnlyIn(Dist.CLIENT)
@@ -112,8 +113,8 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 		this.leftPickPart = this.addSprite(new Sprite(new TextureInfo(0, 0, 0, 12, 160, 16)).position(0f, this.lockPick.posY).rotation(-30f, -10f, this.lockPick.posY + 13f).alpha(0f));
 	}
 
-	public static final ResourceLocation DEFAULT_LOCK_TEXTURE = new ResourceLocation(Locks.ID, "textures/gui/iron_lock.png");
-	public static final ResourceLocation DEFAULT_PICK_TEXTURE = new ResourceLocation(Locks.ID, "textures/gui/iron_lock_pick.png");
+	public static final ResourceLocation DEFAULT_LOCK_TEXTURE = ResourceLocation.fromNamespaceAndPath(Locks.ID, "textures/lockpicking/iron_lock.png");
+	public static final ResourceLocation DEFAULT_PICK_TEXTURE = ResourceLocation.fromNamespaceAndPath(Locks.ID, "textures/lockpicking/iron_lock_pick.png");
 
 	public static ResourceLocation getTextureFor(ItemStack stack)
 	{
@@ -123,7 +124,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 	public static ResourceLocation getTextureFor(ItemStack stack, ResourceLocation fallback)
 	{
 		ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
-		ResourceLocation tex = new ResourceLocation(key.getNamespace(), "textures/gui/" + key.getPath() + ".png");
+		ResourceLocation tex = ResourceLocation.fromNamespaceAndPath(key.getNamespace(), "textures/lockpicking/" + key.getPath() + ".png");
 		try
 		{
 			if (Minecraft.getInstance().getResourceManager().getResource(tex).isPresent())
@@ -148,14 +149,14 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 	@Override
 	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
 	{
-		this.renderBackground(guiGraphics);
+		this.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
 		super.render(guiGraphics, mouseX, mouseY, partialTick);
 	}
 
 	@Override
 	protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY)
 	{
-		float pt = this.minecraft.getFrameTime(); // idk why, but partialTick looks laggy AF... Use getFrameTime instead!
+		float pt = partialTick;
 		int cornerX = (this.width - this.imageWidth) / 2;
 		int cornerY = (this.height - this.imageHeight) / 2;
 
@@ -270,7 +271,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 		this.currPin = pin;
 		this.pendingSequence = this.nextSequence++;
 		this.pendingTicks = 0;
-		LocksNetwork.MAIN.sendToServer(new TryPinPacket(this.getMenu().containerId, this.pendingSequence, (byte) pin));
+		LocksNetwork.MAIN.send(new TryPinPacket(this.getMenu().containerId, this.pendingSequence, (byte) pin), PacketDistributor.SERVER.noArg());
 		return true;
 	}
 

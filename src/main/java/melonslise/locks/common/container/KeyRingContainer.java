@@ -32,7 +32,6 @@ public class KeyRingContainer extends AbstractContainerMenu
 			this.player = player;
 		}
 
-		// TODO PITCH
 		@Override
 		public void set(ItemStack stack)
 		{

@@ -60,18 +60,6 @@ public class Sprite
 		return !this.actions.isEmpty();
 	}
 
-	public void draw(PoseStack mtx, float partialTick)
-	{
-		if(this.alpha <= 0f)
-			return;
-		mtx.pushPose();
-		mtx.translate(this.originX, this.originY, 0f);
-		mtx.mulPose(ROTATION.rotationZ((float) Math.toRadians(LocksClientUtil.lerp(this.oldRot, this.rot, partialTick))));
-		mtx.translate(-this.originX, -this.originY, 0f);
-		this.tex.draw(mtx, LocksClientUtil.lerp(this.oldPosX, this.posX, partialTick), LocksClientUtil.lerp(this.oldPosY, this.posY, partialTick), LocksClientUtil.lerp(this.oldAlpha, this.alpha, partialTick));
-		mtx.popPose();
-	}
-
 	public void draw(GuiGraphics guiGraphics, ResourceLocation texture, float partialTick)
 	{
 		if(this.alpha <= 0f)

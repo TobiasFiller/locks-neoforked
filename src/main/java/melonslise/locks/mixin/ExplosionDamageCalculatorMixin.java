@@ -12,7 +12,6 @@ import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.item.LockItem;
 import melonslise.locks.common.util.LocksPredicates;
 import melonslise.locks.common.util.LocksUtil;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Explosion;
@@ -28,7 +27,7 @@ public class ExplosionDamageCalculatorMixin
 	{
 		cir.setReturnValue(cir.getReturnValue().map(r -> Math.max(r, LocksUtil.intersecting(ex.level, pos).filter(LocksPredicates.LOCKED).findFirst().map(lkb -> {
 			int base = LockItem.getResistance(lkb.stack);
-			int reinforced = LocksServerConfig.ENABLE_REINFORCED.get() ? EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.REINFORCED.get(), lkb.stack) : 0;
+			int reinforced = LocksServerConfig.ENABLE_REINFORCED.get() ? LocksEnchantments.level(LocksEnchantments.REINFORCED, lkb.stack) : 0;
 			return reinforced > 0 ? (int)(base * (1f + reinforced * 0.5f)) : base;
 		}).orElse(0))));
 	}

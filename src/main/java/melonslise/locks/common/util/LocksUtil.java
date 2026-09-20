@@ -12,7 +12,6 @@ import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksCapabilities;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.item.LockItem;
 import net.minecraft.world.entity.player.Player;
@@ -131,7 +130,7 @@ public final class LocksUtil
 	{
 		if(!LocksServerConfig.ENABLE_AWARENESS.get())
 			return false;
-		if(EnchantmentHelper.getItemEnchantmentLevel(LocksEnchantments.AWARENESS.get(), lockable.stack) <= 0)
+		if(LocksEnchantments.level(LocksEnchantments.AWARENESS, lockable.stack) <= 0)
 			return false;
 		java.util.UUID owner = LockItem.getOwner(lockable.stack);
 		return owner != null && owner.equals(player.getUUID());
@@ -236,7 +235,7 @@ public final class LocksUtil
 		boolean usedLootScaling = false;
 		if(LocksConfig.LOOT_SCALED_LOCKS.get())
 		{
-			double lootValue = LootValueCalculator.getLootValue(level.getServer(), container.lootTable);
+			double lootValue = LootValueCalculator.getLootValue(level.getServer(), container.lootTable.location());
 			if(!Double.isNaN(lootValue))
 			{
 				stack = LocksConfig.getLockForLootValue(lootValue, rng);

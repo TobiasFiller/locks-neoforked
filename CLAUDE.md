@@ -1,10 +1,10 @@
-# Locks Reforged — Forge 1.20.1 (Ported from 1.16.5)
+# Locks Reforged — Forge 1.21.1 (Ported from 1.16.5)
 
 ## Quick Reference
 - **Mod ID**: `locks`
 - **Package**: `melonslise.locks` (original author's package, NOT com.otectus)
-- **Version**: 1.7.4
-- **MC**: 1.20.1 | **Forge**: 47.2.0 | **Java**: 17
+- **Version**: 1.7.5
+- **MC**: 1.21.1 | **Forge**: 52.1.2 | **Java**: 21
 - **Mappings**: Official
 - **License**: CC BY-NC 3.0 (Attribution-NonCommercial)
 - **Original Author**: Melonslise
@@ -23,21 +23,21 @@ Universal lock system for Minecraft. Locks can be dynamically attached to multip
 src/main/java/melonslise/locks/
   ├── client/      — rendering, GUI, key bindings
   ├── common/      — items, blocks, capabilities, network, events
-  └── mixin/       — 16 mixins (chunk, level, door, piston, explosion, etc.)
+  └── mixin/       — 15 common mixins (chunk, level, door, piston, explosion, etc.)
 src/main/resources/
   ├── META-INF/mods.toml
   ├── META-INF/accesstransformer.cfg  — ATs for Frustum, LevelRenderer, GameRenderer, VillagerTrades, PistonStructureResolver, Explosion, loot tables
-  ├── locks.mixins.json               — 16 mixins (15 common + 1 client); the ONLY manifest the build packages
+  ├── locks.mixins.json               — 15 common mixins; the ONLY base manifest the build packages
   └── assets/locks/, data/locks/
 source-1.16.5/   — archived original source (porting reference)
 ```
 
 ## Key Dependencies
-- **Curios** (5.14.1) — optional, keyring as curio slot (compileOnly API + runtimeOnly)
-- **Carry On** (2.1.2.7) — optional, compiled only when vendored at `libs/`; adds `locks_carryon.mixins.json`
+- **Curios** (8.1.0+1.20.6 API) — optional, keyring as curio slot (compileOnly API)
+- **Carry On** (2.2.2 for Forge 1.21.1) — optional, compiled only when vendored at `libs/carryon-forge-1.21.1-2.2.2.jar`; adds `locks_carryon.mixins.json`
 
 ## Porting Context
-This mod was ported from 1.16.5 to 1.20.1. Key references:
+This mod was ported from 1.16.5 and now targets Minecraft 1.21.1 / Forge 52.x. Key references:
 - `PORTING_NOTES.md` — detailed migration guide (class renames, API changes)
 - `KNOWN_ISSUES.md` — runtime testing status and resolved issues
 - `source-1.16.5/` — original source for comparison

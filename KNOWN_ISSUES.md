@@ -1,4 +1,4 @@
-# Locks Mod 1.20.1 - Known Issues
+# Locks Mod 1.21.1 - Known Issues
 
 ## Port-Specific Notes
 
@@ -245,7 +245,7 @@ Locks are moved together with the block when it is picked up and placed with [Ca
 
 **Config:** `[Compatibility.CarryOn]` in the server config — master toggle, allow/deny carrying locked blocks, optional authorization requirement (default off: anyone can carry, the lock just moves), deny partial multi-block pickup (default on), and transfer logging.
 
-**Building:** requires `libs/carryon-forge-1.20.1-2.1.2.7.jar` (gitignored, like `respawningstructures`) on the compile classpath for the mixins. If the jar is absent the build automatically skips the compat (sources/config/mixin wiring excluded) and the mod builds normally.
+**Building:** requires `libs/carryon-forge-1.21.1-2.2.2.jar` (gitignored, like `respawningstructures`) on the compile classpath for the mixins. If the jar is absent the build automatically skips the compat (sources/config/mixin wiring excluded) and the mod builds normally.
 
 Manual QA (needs a world with Locks + Carry On; not runnable in the headless build env):
 

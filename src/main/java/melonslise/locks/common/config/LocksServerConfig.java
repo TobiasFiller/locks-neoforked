@@ -374,18 +374,6 @@ public class LocksServerConfig
 
 	public static boolean isEnchantmentEnabled(Enchantment enchantment)
 	{
-		if (enchantment == LocksEnchantments.SHOCKING.get()) return ENABLE_SHOCKING.get();
-		if (enchantment == LocksEnchantments.STURDY.get()) return ENABLE_STURDY.get();
-		if (enchantment == LocksEnchantments.COMPLEXITY.get()) return ENABLE_COMPLEXITY.get();
-		if (enchantment == LocksEnchantments.SILENT.get()) return ENABLE_SILENT.get();
-		if (enchantment == LocksEnchantments.AUTO_PICK.get()) return ENABLE_AUTO_PICK.get();
-		if (enchantment == LocksEnchantments.REINFORCED.get()) return ENABLE_REINFORCED.get();
-		if (enchantment == LocksEnchantments.AWARENESS.get()) return ENABLE_AWARENESS.get();
-		if (enchantment == LocksEnchantments.FINESSE.get()) return ENABLE_FINESSE.get();
-		if (enchantment == LocksEnchantments.ATTUNEMENT.get()) return ENABLE_ATTUNEMENT.get();
-		if (enchantment == LocksEnchantments.GROUNDED.get()) return ENABLE_GROUNDED.get();
-		if (enchantment == LocksEnchantments.QUIET_HAND.get()) return ENABLE_QUIET_HAND.get();
-		if (enchantment == LocksEnchantments.LAST_CATCH.get()) return ENABLE_LAST_CATCH.get();
 		return true;
 	}
 

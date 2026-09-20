@@ -4,24 +4,26 @@ import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.init.LocksRecipeSerializers;
 import melonslise.locks.common.item.LockingItem;
 import melonslise.locks.common.recipe.KeyPairing.SlotKind;
+import melonslise.locks.common.util.ItemStackNbt;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.util.thread.EffectiveSide;
 
 import java.util.OptionalInt;
-import net.minecraft.world.inventory.CraftingContainer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.CraftingBookCategory;
+import net.minecraft.world.item.crafting.CraftingInput;
 import net.minecraft.world.item.crafting.CustomRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.core.NonNullList;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 
 public class KeyRecipe extends CustomRecipe
 {
-	public KeyRecipe(ResourceLocation id, CraftingBookCategory category)
+	public KeyRecipe(CraftingBookCategory category)
 	{
-		super(id, category);
+		super(category);
 	}
 
 	@Override
@@ -31,13 +33,13 @@ public class KeyRecipe extends CustomRecipe
 	}
 
 	@Override
-	public boolean matches(CraftingContainer inv, Level world)
+	public boolean matches(CraftingInput inv, Level world)
 	{
 		return KeyPairing.matches(inv);
 	}
 
 	@Override
-	public ItemStack assemble(CraftingContainer inv, net.minecraft.core.RegistryAccess registryAccess)
+	public ItemStack assemble(CraftingInput inv, HolderLookup.Provider provider)
 	{
 		ItemStack source = KeyPairing.findSource(inv);
 		if(source.isEmpty())
@@ -45,14 +47,14 @@ public class KeyRecipe extends CustomRecipe
 		ItemStack out = new ItemStack(LocksItems.KEY.get());
 		OptionalInt id = LockingItem.readId(source);
 		if(id.isPresent())
-			out.getOrCreateTag().putInt(LockingItem.KEY_ID, id.getAsInt());
+			ItemStackNbt.updateCustomData(out, tag -> tag.putInt(LockingItem.KEY_ID, id.getAsInt()));
 		// A source with no id yet (a lock taken straight from the creative menu into the grid, say) is
 		// stamped here so pairing still works — but only on the server, which owns the id. Doing it
 		// client-side would write a random id into the client copy of the source that the server would
 		// never send back, leaving a bogus id showing in its tooltip. The client simply previews a key
 		// with no id line; the server's result replaces it when the craft is taken.
 		else if(EffectiveSide.get() == LogicalSide.SERVER)
-			out.getOrCreateTag().putInt(LockingItem.KEY_ID, LockingItem.getOrSetId(source));
+			ItemStackNbt.updateCustomData(out, tag -> tag.putInt(LockingItem.KEY_ID, LockingItem.getOrSetId(source)));
 		return out;
 	}
 
@@ -60,9 +62,9 @@ public class KeyRecipe extends CustomRecipe
 	// name and owner data. Only the blank is consumed, one per craft, so shift-crafting a stack of
 	// blanks yields one key each.
 	@Override
-	public NonNullList<ItemStack> getRemainingItems(CraftingContainer inv)
+	public NonNullList<ItemStack> getRemainingItems(CraftingInput inv)
 	{
-		NonNullList<ItemStack> list = NonNullList.withSize(inv.getContainerSize(), ItemStack.EMPTY);
+		NonNullList<ItemStack> list = NonNullList.withSize(inv.size(), ItemStack.EMPTY);
 		for (int a = 0; a < list.size(); ++a)
 			if(KeyPairing.classify(inv.getItem(a)) == SlotKind.SOURCE)
 			{

@@ -65,33 +65,31 @@ public final class LocksItems
 		for (var entry : LockTypeRegistry.allLockPickDefinitions().entrySet())
 		{
 			var pickStats = entry.getValue();
+			// Lockpicks need to stack while still wearing down during lock picking. Vanilla item durability
+			// forces max stack size 1 in 1.21, so LockPickItem stores wear in custom data instead.
 			Item.Properties properties = pickStats.fireResistant() ? new Item.Properties().fireResistant() : new Item.Properties();
-			// Durability is what makes a pick break, so it has to be baked in here rather than read at use
-			// time. A definition asking for 0 wants an unbreakable pick: leave the item undamageable, since
-			// durability(0) would instead make the very first wrong pin destroy it.
-			if (pickStats.durability() > LockTypeRegistry.UNBREAKABLE_DURABILITY)
-				properties = properties.durability(pickStats.durability());
+			properties = properties.stacksTo(LockPickItem.MAX_STACK_SIZE);
 			Item.Properties finalProperties = properties;
 			RegistryObject<Item> obj = ITEMS.register(entry.getKey().getPath(), () -> new LockPickItem(finalProperties));
 			LOCKPICK_ITEMS.put(entry.getKey(), obj);
 		}
 
 		// Populate backward-compatible static fields
-		WOOD_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "wood_lock"));
-		COPPER_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "copper_lock"));
-		IRON_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "iron_lock"));
-		STEEL_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "steel_lock"));
-		GOLD_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "gold_lock"));
-		DIAMOND_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "diamond_lock"));
-		NETHERITE_LOCK = LOCK_ITEMS.get(new ResourceLocation(Locks.ID, "netherite_lock"));
+		WOOD_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "wood_lock"));
+		COPPER_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "copper_lock"));
+		IRON_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "iron_lock"));
+		STEEL_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_lock"));
+		GOLD_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "gold_lock"));
+		DIAMOND_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "diamond_lock"));
+		NETHERITE_LOCK = LOCK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "netherite_lock"));
 
-		WOOD_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "wood_lock_pick"));
-		COPPER_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "copper_lock_pick"));
-		IRON_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "iron_lock_pick"));
-		STEEL_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "steel_lock_pick"));
-		GOLD_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "gold_lock_pick"));
-		DIAMOND_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "diamond_lock_pick"));
-		NETHERITE_LOCK_PICK = LOCKPICK_ITEMS.get(new ResourceLocation(Locks.ID, "netherite_lock_pick"));
+		WOOD_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "wood_lock_pick"));
+		COPPER_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "copper_lock_pick"));
+		IRON_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "iron_lock_pick"));
+		STEEL_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_lock_pick"));
+		GOLD_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "gold_lock_pick"));
+		DIAMOND_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "diamond_lock_pick"));
+		NETHERITE_LOCK_PICK = LOCKPICK_ITEMS.get(ResourceLocation.fromNamespaceAndPath(Locks.ID, "netherite_lock_pick"));
 
 		ITEMS.register(FMLJavaModLoadingContext.get().getModEventBus());
 	}
