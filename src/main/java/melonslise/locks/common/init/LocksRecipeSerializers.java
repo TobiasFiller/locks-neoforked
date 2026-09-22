@@ -1,24 +1,24 @@
 package melonslise.locks.common.init;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import melonslise.locks.Locks;
 import melonslise.locks.common.recipe.KeyRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.SimpleCraftingRecipeSerializer;
-import net.minecraftforge.registries.RegistryObject;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class LocksRecipeSerializers
 {
-	public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(ForgeRegistries.RECIPE_SERIALIZERS, Locks.ID);
+	public static final DeferredRegister<RecipeSerializer<?>> RECIPE_SERIALIZERS = DeferredRegister.create(BuiltInRegistries.RECIPE_SERIALIZER, Locks.ID);
 
-	public static final RegistryObject<RecipeSerializer<KeyRecipe>> KEY = RECIPE_SERIALIZERS.register("crafting_key", () -> new SimpleCraftingRecipeSerializer<>(KeyRecipe::new));
+	public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<KeyRecipe>> KEY = RECIPE_SERIALIZERS.register("crafting_key", () -> new SimpleCraftingRecipeSerializer<>(KeyRecipe::new));
 
 	private LocksRecipeSerializers() {}
 
-	public static void register()
+	public static void register(IEventBus modBus)
 	{
-		RECIPE_SERIALIZERS.register(FMLJavaModLoadingContext.get().getModEventBus());
+		RECIPE_SERIALIZERS.register(modBus);
 	}
 }

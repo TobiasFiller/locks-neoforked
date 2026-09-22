@@ -1,5 +1,6 @@
 package melonslise.locks.common.config;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,42 +17,41 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class LocksConfig
 {
-	public static final ForgeConfigSpec SPEC;
+	public static final ModConfigSpec SPEC;
 
-	public static final ForgeConfigSpec.DoubleValue GENERATION_CHANCE;
-	public static final ForgeConfigSpec.DoubleValue GENERATION_ENCHANT_CHANCE;
-	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> GENERATED_LOCKS;
-	public static final ForgeConfigSpec.ConfigValue<List<? extends Integer>> GENERATED_LOCK_WEIGHTS;
-	public static final ForgeConfigSpec.BooleanValue RANDOMIZE_LOADED_LOCKS;
+	public static final ModConfigSpec.DoubleValue GENERATION_CHANCE;
+	public static final ModConfigSpec.DoubleValue GENERATION_ENCHANT_CHANCE;
+	public static final ModConfigSpec.ConfigValue<List<? extends String>> GENERATED_LOCKS;
+	public static final ModConfigSpec.ConfigValue<List<? extends Integer>> GENERATED_LOCK_WEIGHTS;
+	public static final ModConfigSpec.BooleanValue RANDOMIZE_LOADED_LOCKS;
 
 	// Lock stat overrides (sentinel -1 = use JSON default)
-	public static final ForgeConfigSpec.IntValue WOOD_LOCK_LENGTH, WOOD_LOCK_ENCHANT, WOOD_LOCK_RESISTANCE, WOOD_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue COPPER_LOCK_LENGTH, COPPER_LOCK_ENCHANT, COPPER_LOCK_RESISTANCE, COPPER_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue IRON_LOCK_LENGTH, IRON_LOCK_ENCHANT, IRON_LOCK_RESISTANCE, IRON_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue STEEL_LOCK_LENGTH, STEEL_LOCK_ENCHANT, STEEL_LOCK_RESISTANCE, STEEL_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue GOLD_LOCK_LENGTH, GOLD_LOCK_ENCHANT, GOLD_LOCK_RESISTANCE, GOLD_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue DIAMOND_LOCK_LENGTH, DIAMOND_LOCK_ENCHANT, DIAMOND_LOCK_RESISTANCE, DIAMOND_LOCK_PICK_WEAR;
-	public static final ForgeConfigSpec.IntValue NETHERITE_LOCK_LENGTH, NETHERITE_LOCK_ENCHANT, NETHERITE_LOCK_RESISTANCE, NETHERITE_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue WOOD_LOCK_LENGTH, WOOD_LOCK_ENCHANT, WOOD_LOCK_RESISTANCE, WOOD_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue COPPER_LOCK_LENGTH, COPPER_LOCK_ENCHANT, COPPER_LOCK_RESISTANCE, COPPER_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue IRON_LOCK_LENGTH, IRON_LOCK_ENCHANT, IRON_LOCK_RESISTANCE, IRON_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue STEEL_LOCK_LENGTH, STEEL_LOCK_ENCHANT, STEEL_LOCK_RESISTANCE, STEEL_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue GOLD_LOCK_LENGTH, GOLD_LOCK_ENCHANT, GOLD_LOCK_RESISTANCE, GOLD_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue DIAMOND_LOCK_LENGTH, DIAMOND_LOCK_ENCHANT, DIAMOND_LOCK_RESISTANCE, DIAMOND_LOCK_PICK_WEAR;
+	public static final ModConfigSpec.IntValue NETHERITE_LOCK_LENGTH, NETHERITE_LOCK_ENCHANT, NETHERITE_LOCK_RESISTANCE, NETHERITE_LOCK_PICK_WEAR;
 
 	// Lockpick stat overrides (sentinel -1.0 = use JSON default)
-	public static final ForgeConfigSpec.DoubleValue WOOD_PICK_STRENGTH, COPPER_PICK_STRENGTH, IRON_PICK_STRENGTH, STEEL_PICK_STRENGTH;
-	public static final ForgeConfigSpec.DoubleValue GOLD_PICK_STRENGTH, DIAMOND_PICK_STRENGTH, NETHERITE_PICK_STRENGTH;
+	public static final ModConfigSpec.DoubleValue WOOD_PICK_STRENGTH, COPPER_PICK_STRENGTH, IRON_PICK_STRENGTH, STEEL_PICK_STRENGTH;
+	public static final ModConfigSpec.DoubleValue GOLD_PICK_STRENGTH, DIAMOND_PICK_STRENGTH, NETHERITE_PICK_STRENGTH;
 
 	// Loot-scaled lock generation
-	public static final ForgeConfigSpec.BooleanValue LOOT_SCALED_LOCKS;
-	public static final ForgeConfigSpec.DoubleValue DEFAULT_ITEM_VALUE;
-	public static final ForgeConfigSpec.DoubleValue ENCHANT_VALUE_BONUS;
-	public static final ForgeConfigSpec.DoubleValue RARITY_COMMON_MULT;
-	public static final ForgeConfigSpec.DoubleValue RARITY_UNCOMMON_MULT;
-	public static final ForgeConfigSpec.DoubleValue RARITY_RARE_MULT;
-	public static final ForgeConfigSpec.DoubleValue RARITY_EPIC_MULT;
-	public static final ForgeConfigSpec.ConfigValue<List<? extends Double>> LOOT_VALUE_TIERS;
-	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> ITEM_VALUE_OVERRIDES;
+	public static final ModConfigSpec.BooleanValue LOOT_SCALED_LOCKS;
+	public static final ModConfigSpec.DoubleValue DEFAULT_ITEM_VALUE;
+	public static final ModConfigSpec.DoubleValue ENCHANT_VALUE_BONUS;
+	public static final ModConfigSpec.DoubleValue RARITY_COMMON_MULT;
+	public static final ModConfigSpec.DoubleValue RARITY_UNCOMMON_MULT;
+	public static final ModConfigSpec.DoubleValue RARITY_RARE_MULT;
+	public static final ModConfigSpec.DoubleValue RARITY_EPIC_MULT;
+	public static final ModConfigSpec.ConfigValue<List<? extends Double>> LOOT_VALUE_TIERS;
+	public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_VALUE_OVERRIDES;
 
 	public static NavigableMap<Integer, Item> weightedGeneratedLocks;
 	public static int weightTotal;
@@ -60,7 +60,7 @@ public final class LocksConfig
 
 	static
 	{
-		ForgeConfigSpec.Builder cfg = new ForgeConfigSpec.Builder();
+		ModConfigSpec.Builder cfg = new ModConfigSpec.Builder();
 
 		GENERATION_CHANCE = cfg
 			.comment("Chance that a generated chest receives a lock. Set to 1.0 for every chest, lower to skip some.",
@@ -224,7 +224,7 @@ public final class LocksConfig
 		for(int a = 0; a < Math.min(locks.size(), weights.size()); ++a)
 		{
 			weightTotal += weights.get(a);
-			weightedGeneratedLocks.put(weightTotal, ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(locks.get(a))));
+			weightedGeneratedLocks.put(weightTotal, BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a))));
 		}
 
 		// Build loot value tier map
@@ -233,7 +233,7 @@ public final class LocksConfig
 		if (tiers.size() != locks.size())
 			Locks.LOGGER.warn("Loot Value Tiers list size ({}) doesn't match Generated Locks list size ({}). Some lock tiers may be unreachable.", tiers.size(), locks.size());
 		for(int a = 0; a < Math.min(locks.size(), tiers.size()); ++a)
-			lootValueTierMap.put(tiers.get(a), ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(locks.get(a))));
+			lootValueTierMap.put(tiers.get(a), BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a))));
 
 		// Parse item value overrides
 		itemValueOverrides = new HashMap<>();
@@ -311,7 +311,7 @@ public final class LocksConfig
 		applyPickConfigOverride("netherite_lock_pick", NETHERITE_PICK_STRENGTH);
 	}
 
-	private static void applyLockConfigOverride(String name, ForgeConfigSpec.IntValue length, ForgeConfigSpec.IntValue enchant, ForgeConfigSpec.IntValue resistance, ForgeConfigSpec.IntValue pickWear)
+	private static void applyLockConfigOverride(String name, ModConfigSpec.IntValue length, ModConfigSpec.IntValue enchant, ModConfigSpec.IntValue resistance, ModConfigSpec.IntValue pickWear)
 	{
 		int l = length.get();
 		int e = enchant.get();
@@ -324,7 +324,7 @@ public final class LocksConfig
 		}
 	}
 
-	private static void applyPickConfigOverride(String name, ForgeConfigSpec.DoubleValue strength)
+	private static void applyPickConfigOverride(String name, ModConfigSpec.DoubleValue strength)
 	{
 		double s = strength.get();
 		if (s >= 0)

@@ -46,13 +46,13 @@ public class StructureTemplateMixin
 {
 	private final List<LockableInfo> lockableInfos = new ArrayList<>();
 
-	@Inject(at = @At("HEAD"), method = "fillFromWorld")
+	@Inject(at = @At("HEAD"), method = "fillFromWorld", remap = false)
 	private void fillFromWorld(Level world, BlockPos start, Vec3i size, boolean takeEntities, @Nullable Block toIgnore, CallbackInfo ci)
 	{
 		if (size.getX() >= 1 && size.getY() >= 1 && size.getZ() >= 1)
 		{
 			this.lockableInfos.clear();
-			ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+			ILockableHandler handler = LocksCapabilities.getHandler(world);
 			if(handler == null)
 				return;
 			Cuboid6i bb = new Cuboid6i(start, start.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1));
@@ -71,7 +71,7 @@ public class StructureTemplateMixin
 	}
 
 	// Second return
-	@Inject(at = @At(value = "RETURN", ordinal = 1), method = "placeInWorld")
+	@Inject(at = @At(value = "RETURN", ordinal = 1), method = "placeInWorld", remap = false)
 	private void placeInWorld(ServerLevelAccessor world, BlockPos start, BlockPos size, StructurePlaceSettings settings, RandomSource rng, int i, CallbackInfoReturnable<Boolean> cir)
 	{
 		Level level;
@@ -84,7 +84,7 @@ public class StructureTemplateMixin
 			Locks.LOGGER.warn(world + "#getLevel threw an error! Skipping lockable placement for this template ");
 			return;
 		}
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if(handler == null)
 			return;
 		// Build the lockables now (so RNG consumption and transforms keep their exact timing), then defer
@@ -119,7 +119,7 @@ public class StructureTemplateMixin
 
 	private static final String KEY_LOCKABLES = "Lockables";
 
-	@Inject(at = @At("HEAD"), method = "save")
+	@Inject(at = @At("HEAD"), method = "save", remap = false)
 	private void save(CompoundTag nbt, CallbackInfoReturnable<CompoundTag> cir)
 	{
 		ListTag list = new ListTag();
@@ -128,7 +128,7 @@ public class StructureTemplateMixin
 		nbt.put(KEY_LOCKABLES, list);
 	}
 
-	@Inject(at = @At("HEAD"), method = "load")
+	@Inject(at = @At("HEAD"), method = "load", remap = false)
 	private void read(HolderGetter<Block> blockGetter, CompoundTag nbt, CallbackInfo ci)
 	{
 		this.lockableInfos.clear();

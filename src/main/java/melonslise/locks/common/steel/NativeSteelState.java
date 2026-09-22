@@ -11,9 +11,9 @@ import net.minecraft.resources.ResourceLocation;
  * @param nativeIngotActive  whether Locks should provide its native steel ingot (recipes + creative tab)
  * @param nativeNuggetActive whether Locks should provide its native steel nugget
  * @param nativeOreActive    whether Locks should generate its native steel ore
- * @param foreignIngots      non-Locks IDs found in {@code forge:ingots/steel} (sorted, de-duplicated)
- * @param foreignNuggets     non-Locks IDs found in {@code forge:nuggets/steel}
- * @param foreignOres        non-Locks IDs found in {@code forge:ores/steel}
+ * @param foreignIngots      non-Locks IDs found in {@code c:ingots/steel} (sorted, de-duplicated)
+ * @param foreignNuggets     non-Locks IDs found in {@code c:nuggets/steel}
+ * @param foreignOres        non-Locks IDs found in {@code c:ores/steel}
  */
 public record NativeSteelState(
 	boolean nativeIngotActive,

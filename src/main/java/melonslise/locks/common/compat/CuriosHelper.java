@@ -7,7 +7,7 @@ import melonslise.locks.common.util.Lockable;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 public final class CuriosHelper
 {
@@ -35,9 +35,7 @@ public final class CuriosHelper
 	// re-locking a door/chest the instant the player tries to open it.
 	private static boolean isAimingAtLock(Player player, int lockId)
 	{
-		ILockableHandler handler = player.level()
-			.getCapability(LocksCapabilities.LOCKABLE_HANDLER)
-			.orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(player.level());
 		if (handler == null)
 			return false;
 

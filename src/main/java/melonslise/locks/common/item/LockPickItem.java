@@ -1,5 +1,6 @@
 package melonslise.locks.common.item;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.List;
 
 import melonslise.locks.Locks;
@@ -25,10 +26,9 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.ForgeEventFactory;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.event.EventHooks;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 public class LockPickItem extends Item
 {
@@ -155,7 +155,7 @@ public class LockPickItem extends Item
 			EquipmentSlot slot = hand == InteractionHand.MAIN_HAND ? EquipmentSlot.MAINHAND : EquipmentSlot.OFFHAND;
 			Item item = stack.getItem();
 			stack.shrink(1);
-			ForgeEventFactory.onPlayerDestroyItem(player, stack, slot);
+			EventHooks.onPlayerDestroyItem(player, stack, hand);
 			player.onEquippedItemBroken(item, slot);
 			return true;
 		}
@@ -209,7 +209,7 @@ public class LockPickItem extends Item
 
 	private static boolean isNetheriteLockPick(Item item)
 	{
-		ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+		ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
 		return NETHERITE_LOCK_PICK_ID.equals(itemId);
 	}
 

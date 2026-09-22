@@ -1,13 +1,21 @@
 package melonslise.locks.common.network.toserver;
 
+import melonslise.locks.Locks;
 import melonslise.locks.common.container.LockPickingContainer;
 import melonslise.locks.common.util.LockSecretPolicy;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public class TryPinPacket
+public class TryPinPacket implements CustomPacketPayload
 {
+	public static final Type<TryPinPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Locks.ID, "try_pin"));
+	public static final StreamCodec<RegistryFriendlyByteBuf, TryPinPacket> STREAM_CODEC = StreamCodec.of((buf, pkt) -> encode(pkt, buf), TryPinPacket::decode);
+
 	// The menu this attempt belongs to, and a client-issued sequence that only ever increases within that menu.
 	// Together they stop a result from one session (or one replayed packet) being applied to another attempt.
 	private final int containerId;
@@ -40,7 +48,13 @@ public class TryPinPacket
 		buf.writeByte(pkt.pin);
 	}
 
-	public static void handle(TryPinPacket pkt, CustomPayloadEvent.Context ctx)
+	@Override
+	public Type<? extends CustomPacketPayload> type()
+	{
+		return TYPE;
+	}
+
+	public static void handle(TryPinPacket pkt, IPayloadContext ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
 		ctx.enqueueWork(new Runnable()
@@ -48,7 +62,7 @@ public class TryPinPacket
 			@Override
 			public void run()
 			{
-				ServerPlayer sender = ctx.getSender();
+				ServerPlayer sender = (ServerPlayer) ctx.player();
 				if(sender == null)
 					return;
 				// instanceof, not getType(): AbstractContainerMenu#getType throws for menus built with a null
@@ -65,6 +79,5 @@ public class TryPinPacket
 				lpc.tryPin(pkt.pin, pkt.containerId, pkt.sequence);
 			}
 		});
-		ctx.setPacketHandled(true);
 	}
 }

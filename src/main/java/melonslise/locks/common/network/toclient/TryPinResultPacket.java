@@ -1,17 +1,24 @@
 package melonslise.locks.common.network.toclient;
 
+import melonslise.locks.Locks;
 import melonslise.locks.client.network.ClientPinResultHandler;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.network.CustomPayloadEvent;
-import net.minecraftforge.fml.DistExecutor;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * The server's verdict on one pin attempt, echoed back with the identity of the request that produced it so the
  * client can only ever apply it to that request.
  */
-public class TryPinResultPacket
+public class TryPinResultPacket implements CustomPacketPayload
 {
+	public static final Type<TryPinResultPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Locks.ID, "try_pin_result"));
+	public static final StreamCodec<RegistryFriendlyByteBuf, TryPinResultPacket> STREAM_CODEC = StreamCodec.of((buf, pkt) -> encode(pkt, buf), TryPinResultPacket::decode);
+
 	public final int containerId, sequence, pin, progress;
 	public final boolean correct, reset, terminal;
 
@@ -42,7 +49,13 @@ public class TryPinResultPacket
 		buf.writeBoolean(pkt.terminal);
 	}
 
-	public static void handle(TryPinResultPacket pkt, CustomPayloadEvent.Context ctx)
+	@Override
+	public Type<? extends CustomPacketPayload> type()
+	{
+		return TYPE;
+	}
+
+	public static void handle(TryPinResultPacket pkt, IPayloadContext ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
 		ctx.enqueueWork(new Runnable()
@@ -52,10 +65,9 @@ public class TryPinResultPacket
 			{
 				// Registering the packet PLAY_TO_CLIENT keeps a server from running this, but it does not stop the
 				// JVM resolving the client classes named in the method body when the method is verified. The
-				// dereference therefore lives in a client-only class, reached only through DistExecutor.
-				DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientPinResultHandler.handle(pkt));
+				if(FMLEnvironment.dist.isClient())
+					ClientPinResultHandler.handle(pkt);
 			}
 		});
-		ctx.setPacketHandled(true);
 	}
 }

@@ -5,8 +5,8 @@ import melonslise.locks.common.init.LocksRecipeSerializers;
 import melonslise.locks.common.item.LockingItem;
 import melonslise.locks.common.recipe.KeyPairing.SlotKind;
 import melonslise.locks.common.util.ItemStackNbt;
-import net.minecraftforge.fml.LogicalSide;
-import net.minecraftforge.fml.util.thread.EffectiveSide;
+import net.neoforged.fml.LogicalSide;
+import net.neoforged.fml.util.thread.EffectiveSide;
 
 import java.util.OptionalInt;
 import net.minecraft.world.item.ItemStack;

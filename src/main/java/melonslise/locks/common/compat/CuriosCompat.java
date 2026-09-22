@@ -1,11 +1,11 @@
 package melonslise.locks.common.compat;
 
+import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.item.LockingItem;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 import top.theillusivec4.curios.api.CuriosApi;
 
 public final class CuriosCompat
@@ -20,7 +20,7 @@ public final class CuriosCompat
 			for (var result : found)
 			{
 				ItemStack ring = result.stack();
-				IItemHandler handler = ring.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+				IItemHandler handler = LocksCapabilities.getItemHandler(ring);
 				if (handler == null)
 					continue;
 				for (int i = 0; i < handler.getSlots(); i++)

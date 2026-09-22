@@ -1,103 +1,50 @@
-buildscript {
-    repositories {
-        maven { url = 'https://maven.minecraftforge.net' }
-        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        mavenCentral()
-    }
-    dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '[6.0,6.2)', changing: true
-        classpath group: 'org.spongepowered', name: 'mixingradle', version: '0.7-SNAPSHOT'
-    }
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id 'net.neoforged.gradle.userdev' version '7.1.39'
 }
 
-apply plugin: 'net.minecraftforge.gradle'
-apply plugin: 'org.spongepowered.mixin'
-apply plugin: 'eclipse'
-apply plugin: 'maven-publish'
+tasks.named('wrapper', Wrapper).configure {
+    distributionType = Wrapper.DistributionType.BIN
+    gradleVersion = '8.14.3'
+}
 
 version = project.mod_version
 group = project.mod_group_id
-archivesBaseName = 'locks_reforged'
+
+base {
+    archivesName = 'locks_reforged'
+}
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-// Carry On compatibility is optional and compiled only when its jar is vendored under libs/ (gitignored,
-// like respawningstructures). Unlike that reflection-based compat, the Carry On compat uses mixins that
-// need the target classes on the compile classpath, so when the jar is absent we skip the whole thing:
-// exclude the compat mixin sources + config and drop the extra mixin wiring. The mod still builds fine.
-ext.carryOnJar = file('libs/carryon-forge-1.21.1-2.2.2.jar')
+minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
+
+// Carry On compatibility is optional and compiled only when its jar is vendored under libs/ (gitignored).
+ext.carryOnJar = file('libs/carryon-neoforge-1.21.1-2.2.2.jar')
 ext.hasCarryOn = carryOnJar.exists()
-// Opt-in release guard: -PrequireCarryOn=true (or the property in a release script) turns a missing Carry On jar
-// from a silent feature drop into a build failure. Off by default, so dev builds keep today's behavior.
 ext.requireCarryOn = project.hasProperty('requireCarryOn') && Boolean.parseBoolean(project.property('requireCarryOn').toString())
 if (!hasCarryOn && requireCarryOn)
-    throw new GradleException("requireCarryOn is set but ${carryOnJar} is missing — this build would ship without Carry On compatibility.")
+    throw new GradleException("requireCarryOn is set but ${carryOnJar} is missing - this build would ship without Carry On compatibility.")
 if (!hasCarryOn)
-    logger.lifecycle("Carry On jar not found at ${carryOnJar} — building without Carry On compatibility.")
+    logger.lifecycle("Carry On jar not found at ${carryOnJar} - building without Carry On compatibility.")
 
-minecraft {
-    mappings channel: project.mapping_channel, version: project.mapping_version
-
-    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-
-    runs {
-        client {
-            workingDirectory project.file('run')
-
-            arg "-mixin.config=${project.mod_id}.mixins.json"
-            if (project.hasCarryOn) arg "-mixin.config=${project.mod_id}_carryon.mixins.json"
-
-            property 'forge.logging.console.level', 'info'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                "${project.mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        server {
-            workingDirectory project.file('run')
-
-            arg "-mixin.config=${project.mod_id}.mixins.json"
-            if (project.hasCarryOn) arg "-mixin.config=${project.mod_id}_carryon.mixins.json"
-
-            property 'forge.logging.console.level', 'info'
-            property 'mixin.env.remapRefMap', 'true'
-            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
-
-            mods {
-                "${project.mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-
-        data {
-            workingDirectory project.file('run')
-
-            property 'forge.logging.console.level', 'info'
-
-            args '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
-
-            mods {
-                "${project.mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
+runs {
+    configureEach {
+        workingDirectory project.layout.projectDirectory.dir('run').dir(name)
+        systemProperty 'forge.logging.console.level', 'info'
+        systemProperty 'mixin.env.remapRefMap', 'true'
+        modSource project.sourceSets.main
     }
-}
 
-processResources {
-    // Track mod_version as a task input so changing the version in gradle.properties invalidates this task.
-    // Without this, `expand` does not register the property as an input and processResources stays UP-TO-DATE,
-    // baking a stale version into mods.toml even though the jar filename updates (the recurring mislabel bug).
-    inputs.property 'mod_version', project.mod_version
-    filesMatching('META-INF/mods.toml') {
-        expand 'mod_version': project.mod_version
+    client {}
+
+    server {
+        argument '--nogui'
+    }
+
+    data {
+        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
     }
 }
 
@@ -114,58 +61,55 @@ repositories {
         name = "Illusive Soulworks"
         url = "https://maven.theillusivec4.top/"
     }
-    // Vendored mod jars under libs/ (gitignored). flatDir lets fg.deobf() remap them from production
-    // to dev mappings, which files(...) cannot do.
     flatDir { dirs 'libs' }
     mavenCentral()
 }
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${project.minecraft_version}-${project.forge_version}"
+    implementation "net.neoforged:neoforge:${project.neo_version}"
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    compileOnly 'net.minecraftforge:mergetool-api:1.0'
-    compileOnly "net.minecraftforge:eventbus:6.2.27"
-    compileOnly "net.minecraftforge:fmlcore:${project.minecraft_version}-${project.forge_version}"
-    compileOnly "net.minecraftforge:javafmllanguage:${project.minecraft_version}-${project.forge_version}"
     compileOnly 'com.google.guava:guava:32.1.2-jre'
     compileOnly 'it.unimi.dsi:fastutil:8.5.12'
     compileOnly 'org.joml:joml:1.10.5'
     compileOnly 'org.apache.commons:commons-lang3:3.14.0'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:8.1.0+1.20.6:api")
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${project.curios_version}:api"
 
     if (project.hasCarryOn) {
-        // MixinExtras @Local (used by the Carry On placement mixin). Forge 52.1 bundles MixinExtras at
-        // runtime, so this is compileOnly for the annotation only.
         compileOnly "io.github.llamalad7:mixinextras-common:0.4.0"
-
-        // Carry On, resolved from the flatDir 'libs' repo (file: libs/carryon-forge-1.21.1-2.2.2.jar).
-        // compileOnly so the mixin annotation processor can resolve the target classes (tschipp.carryon.*)
-        // at compile time; runtimeOnly so the compat mixins can be exercised via runClient/runServer.
-        // Neither is bundled in the shipped jar. The group is arbitrary/ignored by flatDir; name+version
-        // must match the filename so fg.deobf can remap it from production to dev mappings.
-        compileOnly fg.deobf("blank:carryon-forge-1.21.1:2.2.2")
-        runtimeOnly fg.deobf("blank:carryon-forge-1.21.1:2.2.2")
+        compileOnly "blank:carryon-neoforge-1.21.1:2.2.2"
+        localRuntime "blank:carryon-neoforge-1.21.1:2.2.2"
     }
 
-    // Unit tests for pure logic (geometry, NBT round-trips, id counter). testImplementation extends
-    // implementation, so the deobfuscated Minecraft classpath is available — sufficient for the plain data
-    // classes these tests touch (BlockPos, CompoundTag, byte arrays); no FML/Bootstrap launch required.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-test {
-    useJUnitPlatform()
+processResources {
+    def replaceProperties = [
+            minecraft_version      : project.minecraft_version,
+            minecraft_version_range: project.minecraft_version_range,
+            neo_version            : project.neo_version,
+            neo_version_range      : project.neo_version_range,
+            loader_version_range   : project.loader_version_range,
+            mod_id                 : project.mod_id,
+            mod_name               : project.mod_name,
+            mod_license            : project.mod_license,
+            mod_version            : project.mod_version,
+            mod_authors            : project.mod_authors,
+            has_carryon            : project.hasCarryOn
+    ]
+    inputs.properties replaceProperties
+
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand replaceProperties
+    }
 }
 
-mixin {
-    add sourceSets.main, "${project.mod_id}.refmap.json"
-    config "${project.mod_id}.mixins.json"
-    if (project.hasCarryOn)
-        config "${project.mod_id}_carryon.mixins.json"
+test {
+    useJUnitPlatform()
 }
 
 jar {
@@ -177,11 +121,11 @@ jar {
             "Implementation-Title"    : project.mod_id,
             "Implementation-Version"  : project.mod_version,
             "Implementation-Vendor"   : project.mod_authors,
-            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-            "MixinConfigs"            : project.hasCarryOn ? "${project.mod_id}.mixins.json,${project.mod_id}_carryon.mixins.json" : "${project.mod_id}.mixins.json"
+            "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
 }
 
-if (tasks.findByName('reobfJar') != null)
-    jar.finalizedBy('reobfJar')
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

@@ -4,7 +4,7 @@ package melonslise.locks.common.steel;
  * How Locks decides whether to provide (and generate) its own native steel material.
  *
  * <ul>
- *   <li>{@link #AUTO} — inspect the standard Forge steel tags (ignoring Locks' own entries) and only
+ *   <li>{@link #AUTO} — inspect the standard common steel tags (ignoring Locks' own entries) and only
  *       provide the forms no other mod supplies. This is the default.</li>
  *   <li>{@link #FORCE_NATIVE} — always keep Locks' native steel recipes and ore generation on, even when
  *       an external steel economy is present.</li>

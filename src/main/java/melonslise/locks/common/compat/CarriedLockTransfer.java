@@ -46,7 +46,7 @@ public final class CarriedLockTransfer
 	{
 		if (level.isClientSide)
 			return;
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if (handler == null)
 			return;
 
@@ -79,7 +79,7 @@ public final class CarriedLockTransfer
 	{
 		if (be == null)
 			return;
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if (handler == null)
 			return;
 

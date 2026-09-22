@@ -5,7 +5,7 @@ import java.util.List;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import melonslise.locks.common.util.Lockable;
 import net.minecraft.nbt.ListTag;
-import net.minecraftforge.common.util.INBTSerializable;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 
 public interface ILockableStorage extends INBTSerializable<ListTag>
 {

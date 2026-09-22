@@ -19,7 +19,7 @@ import net.minecraft.world.level.chunk.ProtoChunk;
 @Mixin(LevelChunk.class)
 public class LevelChunkMixin
 {
-	@Inject(at = @At("TAIL"), method = "<init>(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ProtoChunk;Lnet/minecraft/world/level/chunk/LevelChunk$PostLoadProcessor;)V")
+	@Inject(at = @At("TAIL"), method = "<init>(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ProtoChunk;Lnet/minecraft/world/level/chunk/LevelChunk$PostLoadProcessor;)V", remap = false)
 	private void init(ServerLevel world, ProtoChunk pr, LevelChunk.PostLoadProcessor proc, CallbackInfo ci)
 	{
 		LevelChunk ch = (LevelChunk) (Object) this;
@@ -33,7 +33,7 @@ public class LevelChunkMixin
 				return;
 			provided = new ArrayList<>(source);
 		}
-		ILockableStorage st = ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+		ILockableStorage st = LocksCapabilities.getStorage(ch);
 		if(st == null)
 			return;
 		// Populate the per-chunk storage synchronously. This map belongs to a freshly built chunk that no

@@ -13,7 +13,6 @@ import melonslise.locks.Locks;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.init.LocksNetwork;
-import melonslise.locks.common.init.LocksPacketDistributors;
 import melonslise.locks.common.network.toclient.AddLockablePacket;
 import melonslise.locks.common.network.toclient.AddLockableToChunkPacket;
 import melonslise.locks.common.network.toclient.RemoveLockablePacket;
@@ -26,7 +25,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.network.PacketDistributor;
 
 /*
  * Manages and handles logic for all LOADED lockables by accessing internal ILockableStorage objects.
@@ -145,7 +143,7 @@ public class LockableHandler implements ILockableHandler
 		LevelChunk ch = this.world.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
 		if(ch == null)
 			return null;
-		ILockableStorage st = ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+		ILockableStorage st = LocksCapabilities.getStorage(ch);
 		return st != null ? st.get() : null;
 	}
 
@@ -159,7 +157,7 @@ public class LockableHandler implements ILockableHandler
 			LevelChunk ch = this.world.getChunkSource().getChunkNow(x, z); // non-blocking; null if not loaded
 			if(ch == null)
 				return null;
-			ILockableStorage st = ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+			ILockableStorage st = LocksCapabilities.getStorage(ch);
 			if(st == null)
 				return null;
 			return st.get().values().stream().anyMatch(lkb1 -> lkb1.bb.intersects(lkb.bb)) ? null : st;
@@ -181,7 +179,7 @@ public class LockableHandler implements ILockableHandler
 		if(this.world.isClientSide)
 			lkb.swing(10);
 		else
-			LocksNetwork.MAIN.send(new AddLockablePacket(lkb), LocksPacketDistributors.TRACKING_AREA.with(sts.stream().map(st -> ((LockableStorage) st).chunk)));
+			LocksNetwork.sendToTrackingArea(sts.stream().map(st -> ((LockableStorage) st).chunk), new AddLockablePacket(lkb));
 		return true;
 	}
 
@@ -197,7 +195,10 @@ public class LockableHandler implements ILockableHandler
 		{
 			LevelChunk ch = this.world.getChunkSource().getChunkNow(x, z); // non-blocking; null if not loaded
 			if(ch != null)
-				ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).ifPresent(st -> st.add(lkb));
+			{
+				ILockableStorage st = LocksCapabilities.getStorage(ch);
+				if(st != null) st.add(lkb);
+			}
 			return false;
 		});
 		if(this.world.isClientSide)
@@ -224,7 +225,10 @@ public class LockableHandler implements ILockableHandler
 		{
 			LevelChunk ch = chs.get(a);
 			if(ch != null)
-				ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).ifPresent(st -> st.remove(id));
+			{
+				ILockableStorage st = LocksCapabilities.getStorage(ch);
+				if(st != null) st.remove(id);
+			}
 		}
 		// Remove from world
 		synchronized(this.mutex)
@@ -235,7 +239,7 @@ public class LockableHandler implements ILockableHandler
 		// Do client/server extras
 		if(this.world.isClientSide)
 			return true;
-		LocksNetwork.MAIN.send(new RemoveLockablePacket(id), LocksPacketDistributors.TRACKING_AREA.with(chs.stream().filter(Objects::nonNull)));
+		LocksNetwork.sendToTrackingArea(chs.stream().filter(Objects::nonNull), new RemoveLockablePacket(id));
 		return true;
 	}
 
@@ -272,7 +276,7 @@ public class LockableHandler implements ILockableHandler
 			if(sync && !this.world.isClientSide)
 			{
 				Lockable send = canonical;
-				LocksNetwork.MAIN.send(new AddLockableToChunkPacket(send, chunk), PacketDistributor.TRACKING_CHUNK.with(chunk));
+				LocksNetwork.sendToTrackingChunk(chunk, new AddLockableToChunkPacket(send, chunk));
 			}
 		}
 	}
@@ -320,7 +324,7 @@ public class LockableHandler implements ILockableHandler
 		Lockable lockable = (Lockable) o;
 		// Persist the state change across ALL occupied chunks, not just whichever one triggered it.
 		this.markDirty(lockable);
-		LocksNetwork.MAIN.send(new UpdateLockablePacket(lockable), LocksPacketDistributors.TRACKING_AREA.with(lockable.bb.containedChunksTo((x, z) -> this.world.getChunkSource().getChunkNow(x, z), false).stream().filter(Objects::nonNull)));
+		LocksNetwork.sendToTrackingArea(lockable.bb.containedChunksTo((x, z) -> this.world.getChunkSource().getChunkNow(x, z), false).stream().filter(Objects::nonNull), new UpdateLockablePacket(lockable));
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package melonslise.locks.common.util;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -20,7 +21,6 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraftforge.registries.ForgeRegistries;
 
 public final class LootValueCalculator
 {
@@ -176,7 +176,7 @@ public final class LootValueCalculator
 		if (itemId == null)
 			return 0;
 
-		Item item = ForgeRegistries.ITEMS.getValue(itemId);
+		Item item = BuiltInRegistries.ITEM.get(itemId);
 		if (item == null)
 			return 0;
 
@@ -330,7 +330,7 @@ public final class LootValueCalculator
 		if (item == null || count <= 0)
 			return 0;
 
-		ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(item);
+		ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(item);
 		double base = LocksConfig.itemValueOverrides != null && itemId != null
 			? LocksConfig.itemValueOverrides.getOrDefault(itemId, LocksConfig.DEFAULT_ITEM_VALUE.get())
 			: LocksConfig.DEFAULT_ITEM_VALUE.get();

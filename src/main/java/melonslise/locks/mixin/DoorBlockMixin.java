@@ -36,7 +36,7 @@ import net.minecraft.world.level.block.state.BlockState;
 @Mixin(DoorBlock.class)
 public class DoorBlockMixin
 {
-	@Inject(at = @At("HEAD"), method = "setOpen(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Z)V", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "setOpen(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;Z)V", cancellable = true, remap = false)
 	private void setOpen(Entity source, Level world, BlockState state, BlockPos pos, boolean open, CallbackInfo ci)
 	{
 		if(!open || world.isClientSide)

@@ -49,12 +49,12 @@ public class LockChestsFeature extends Feature<NoneFeatureConfiguration>
 				// straight into the wrapped chunk's (thread-safe) storage and register it with the world handler
 				// on the main thread, exactly as a normal chunk load would.
 				LevelChunk wrapped = imposter.getWrapped();
-				ILockableStorage st = wrapped.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+				ILockableStorage st = LocksCapabilities.getStorage(wrapped);
 				if (st != null)
 				{
 					st.add(lkb);
 					ServerLevel sl = world.getLevel();
-					ILockableHandler handler = sl.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+					ILockableHandler handler = LocksCapabilities.getHandler(sl);
 					if (handler != null)
 						LocksThreadUtil.runOnServerThread(sl.getServer(), () -> handler.registerChunkStorage(wrapped, st, false));
 				}

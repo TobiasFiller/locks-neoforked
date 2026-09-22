@@ -19,7 +19,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.StructureStart;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 /**
  * Soft compatibility with the "Respawning Structures" mod (someaddons/respawningstructures).
@@ -90,7 +90,7 @@ public final class RespawningStructuresCompat
 
 	private static void relock(ServerLevel level, StructureStart start)
 	{
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if(handler == null)
 			return;
 

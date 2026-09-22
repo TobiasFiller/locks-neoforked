@@ -9,8 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraftforge.items.IItemHandlerModifiable;
-import net.minecraftforge.items.ItemHandlerHelper;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 // Thanks to Gigaherz
 public class KeyRingInventory implements IItemHandlerModifiable
@@ -110,7 +109,7 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		int limit = stack.getMaxStackSize();
 		if (!existing.isEmpty())
 		{
-			if (!ItemHandlerHelper.canItemStacksStack(stack, existing))
+			if (!ItemStack.isSameItemSameComponents(stack, existing))
 				return stack;
 			limit -= existing.getCount();
 		}
@@ -120,12 +119,12 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		if (!simulate)
 		{
 			if (existing.getCount() <= 0)
-				existing = reachedLimit ? ItemHandlerHelper.copyStackWithSize(stack, limit) : stack;
+				existing = copyStackWithSize(stack, reachedLimit ? limit : stack.getCount());
 			else
 				existing.grow(reachedLimit ? limit : stack.getCount());
 			this.setStackInSlot(slot, existing);
 		}
-		return reachedLimit ? ItemHandlerHelper.copyStackWithSize(stack, stack.getCount() - limit) : ItemStack.EMPTY;
+		return reachedLimit ? copyStackWithSize(stack, stack.getCount() - limit) : ItemStack.EMPTY;
 	}
 
 	@Override
@@ -147,9 +146,16 @@ public class KeyRingInventory implements IItemHandlerModifiable
 		else
 		{
 			if (!simulate)
-				this.setStackInSlot(slot, ItemHandlerHelper.copyStackWithSize(existing, existing.getCount() - toExtract));
-			return ItemHandlerHelper.copyStackWithSize(existing, toExtract);
+				this.setStackInSlot(slot, copyStackWithSize(existing, existing.getCount() - toExtract));
+			return copyStackWithSize(existing, toExtract);
 		}
+	}
+
+	private static ItemStack copyStackWithSize(ItemStack stack, int size)
+	{
+		ItemStack copy = stack.copy();
+		copy.setCount(size);
+		return copy;
 	}
 
 	@Override

@@ -20,8 +20,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 public class Lockable extends Observable implements Observer
 {
@@ -83,7 +83,7 @@ public class Lockable extends Observable implements Observer
 
 	public Lockable(Cuboid6i bb, Lock lock, Transform tr, ItemStack stack, Level world)
 	{
-		this(bb, lock, tr, stack, world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElseThrow(() -> new IllegalStateException("Lockable handler capability missing")).nextId());
+		this(bb, lock, tr, stack, LocksCapabilities.getHandler(world).nextId());
 	}
 
 	public Lockable(Cuboid6i bb, Lock lock, Transform tr, ItemStack stack, int id)

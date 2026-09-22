@@ -21,7 +21,7 @@ import melonslise.locks.Locks;
  * diagnostic log — routes through this class so the "ignore Locks' own tag entries" rule and the AUTO/
  * FORCE_NATIVE/EXTERNAL_ONLY semantics live in exactly one place.
  *
- * <p>Detection must never conclude "external steel exists" merely because {@code forge:ingots/steel} is
+ * <p>Detection must never conclude "external steel exists" merely because {@code c:ingots/steel} is
  * non-empty: Locks always registers {@code locks:steel_ingot} into that tag. {@link #isNativeId} filters out
  * Locks' own namespace and the known fallback IDs before counting foreign providers.
  *
@@ -36,10 +36,10 @@ public final class NativeSteelPolicy
 	public static final ResourceLocation STEEL_ORE_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "steel_ore");
 	public static final ResourceLocation DEEPSLATE_STEEL_ORE_ID = ResourceLocation.fromNamespaceAndPath(Locks.ID, "deepslate_steel_ore");
 
-	/** Common Forge steel tag locations. */
-	public static final ResourceLocation TAG_INGOTS_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "ingots/steel");
-	public static final ResourceLocation TAG_NUGGETS_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "nuggets/steel");
-	public static final ResourceLocation TAG_ORES_STEEL = ResourceLocation.fromNamespaceAndPath("forge", "ores/steel");
+	/** Common steel tag locations. */
+	public static final ResourceLocation TAG_INGOTS_STEEL = ResourceLocation.fromNamespaceAndPath("c", "ingots/steel");
+	public static final ResourceLocation TAG_NUGGETS_STEEL = ResourceLocation.fromNamespaceAndPath("c", "nuggets/steel");
+	public static final ResourceLocation TAG_ORES_STEEL = ResourceLocation.fromNamespaceAndPath("c", "ores/steel");
 
 	private static final NativeSteelState DEFAULT_ALL_NATIVE =
 		new NativeSteelState(true, true, true, List.of(), List.of(), List.of());

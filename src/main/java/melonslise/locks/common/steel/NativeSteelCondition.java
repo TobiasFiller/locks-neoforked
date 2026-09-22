@@ -3,21 +3,20 @@ package melonslise.locks.common.steel;
 import java.util.Locale;
 
 import com.mojang.serialization.Codec;
-import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.common.crafting.conditions.ICondition;
+import net.neoforged.neoforge.common.conditions.ICondition;
 
 import melonslise.locks.Locks;
 import melonslise.locks.common.config.LocksServerConfig;
 
 /**
  * A recipe/advancement condition ({@code "type": "locks:steel"}) that gates a recipe on the current
- * {@link NativeSteelPolicy} decision. Unlike Forge's stock {@code forge:tag_empty}, it filters out Locks' own
+ * {@link NativeSteelPolicy} decision. Unlike the stock {@code neoforge:tag_empty}, it filters out Locks' own
  * tag entries, so it can tell whether a <em>foreign</em> mod actually provides steel even though Locks always
- * populates {@code forge:ingots/steel}.
+ * populates {@code c:ingots/steel}.
  *
  * <p>Usage — one {@code query} per condition:
  * <pre>{@code
@@ -25,7 +24,7 @@ import melonslise.locks.common.config.LocksServerConfig;
  *   { "type": "locks:steel", "query": "native_nugget" }     // load only when the native nugget is active
  *   { "type": "locks:steel", "query": "steel_available" }   // load when any steel ingot exists (native or foreign)
  * }</pre>
- * Negate with the stock {@code forge:not} wrapper (e.g. the iron-mechanism fallback loads when steel is absent).
+ * Negate with the stock {@code neoforge:not} wrapper (e.g. the iron-mechanism fallback loads when steel is absent).
  */
 public record NativeSteelCondition(Query query) implements ICondition
 {
@@ -47,7 +46,7 @@ public record NativeSteelCondition(Query query) implements ICondition
 	}
 
 	@Override
-	public boolean test(IContext context, DynamicOps<?> ops)
+	public boolean test(IContext context)
 	{
 		NativeSteelState state = NativeSteelPolicy.compute(new ConditionTagView(context), currentMode());
 		switch (query)

@@ -215,7 +215,7 @@ None of the following has been executed. Run before release and tick individuall
 
 ## Native Steel Fallback (new in 1.7.1)
 
-Locks ships its own steel material (`steel_ingot`, `steel_nugget`, `steel_ore`, `deepslate_steel_ore`) and merges it into the standard `forge:ingots/steel` / `forge:nuggets/steel` / `forge:ores/steel` tags, but **prefers a modpack's own steel** when one exists.
+Locks ships its own steel material (`steel_ingot`, `steel_nugget`, `steel_ore`, `deepslate_steel_ore`) and merges it into the standard `c:ingots/steel` / `c:nuggets/steel` / `c:ores/steel` tags, but **prefers a modpack's own steel** when one exists.
 
 **How it works:** one detection service — `common/steel/NativeSteelPolicy` — inspects the *members* of the Forge steel tags, filters out Locks' own IDs (so its ingot never masks a real external provider), and decides per material form whether the native version is active. A custom recipe condition (`locks:steel`, registered via `CraftingHelper` in `FMLCommonSetupEvent`) gates the native-producing recipes; a custom placement modifier (`locks:steel_ore`) gates ore generation from a cached, thread-safe policy snapshot refreshed on `TagsUpdatedEvent`. The native blocks/items are **always registered** (existing worlds/stacks stay valid) — only acquisition is toggled. Server config `Steel Material Mode` (`AUTO` / `FORCE_NATIVE` / `EXTERNAL_ONLY`) overrides the automatic behavior.
 

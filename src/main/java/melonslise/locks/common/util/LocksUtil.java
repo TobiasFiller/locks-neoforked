@@ -34,7 +34,7 @@ import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 
 public final class LocksUtil
 {
@@ -112,11 +112,11 @@ public final class LocksUtil
 
 	public static Stream<Lockable> intersecting(Level world, BlockPos pos)
 	{
-		return world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).lazyMap(cap ->
-		{
-			Int2ObjectMap<Lockable> chunk = cap.getInChunk(pos);
-			return chunk != null ? chunk.values().stream().filter(lkb -> lkb.bb.intersects(pos)) : Stream.<Lockable>empty();
-		}).orElse(Stream.empty());
+		var cap = LocksCapabilities.getHandler(world);
+		if(cap == null)
+			return Stream.empty();
+		Int2ObjectMap<Lockable> chunk = cap.getInChunk(pos);
+		return chunk != null ? chunk.values().stream().filter(lkb -> lkb.bb.intersects(pos)) : Stream.empty();
 	}
 
 	public static boolean locked(Level world, BlockPos pos)

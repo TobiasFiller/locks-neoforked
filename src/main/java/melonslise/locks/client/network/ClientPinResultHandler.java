@@ -4,8 +4,8 @@ import melonslise.locks.common.container.LockPickingContainer;
 import melonslise.locks.common.network.toclient.TryPinResultPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 /**
  * The client half of {@link TryPinResultPacket}. Kept in its own client-only class so the packet class — which

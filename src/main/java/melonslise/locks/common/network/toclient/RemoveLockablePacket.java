@@ -1,12 +1,21 @@
 package melonslise.locks.common.network.toclient;
 
+import melonslise.locks.Locks;
+import melonslise.locks.common.capability.ILockableHandler;
 import melonslise.locks.common.init.LocksCapabilities;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public class RemoveLockablePacket
+public class RemoveLockablePacket implements CustomPacketPayload
 {
+	public static final Type<RemoveLockablePacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Locks.ID, "remove_lockable"));
+	public static final StreamCodec<RegistryFriendlyByteBuf, RemoveLockablePacket> STREAM_CODEC = StreamCodec.of((buf, pkt) -> encode(pkt, buf), RemoveLockablePacket::decode);
+
 	private final int id;
 
 	public RemoveLockablePacket(int id)
@@ -24,7 +33,13 @@ public class RemoveLockablePacket
 		buf.writeInt(pkt.id);
 	}
 
-	public static void handle(RemoveLockablePacket pkt, CustomPayloadEvent.Context ctx)
+	@Override
+	public Type<? extends CustomPacketPayload> type()
+	{
+		return TYPE;
+	}
+
+	public static void handle(RemoveLockablePacket pkt, IPayloadContext ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
 		ctx.enqueueWork(new Runnable()
@@ -34,9 +49,9 @@ public class RemoveLockablePacket
 			{
 				if(Minecraft.getInstance().level == null)
 					return;
-				Minecraft.getInstance().level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).ifPresent(handler -> handler.remove(pkt.id));
+				ILockableHandler handler = LocksCapabilities.getHandler(Minecraft.getInstance().level);
+				if(handler != null) handler.remove(pkt.id);
 			}
 		});
-		ctx.setPacketHandled(true);
 	}
 }

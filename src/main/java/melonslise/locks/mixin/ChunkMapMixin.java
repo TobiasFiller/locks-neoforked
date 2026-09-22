@@ -12,20 +12,20 @@ import melonslise.locks.common.util.Lockable;
 import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.network.PacketDistributor;
 
 @Mixin(ChunkMap.class)
 public class ChunkMapMixin
 {
-	@Inject(at = @At("TAIL"), method = "markChunkPendingToSend(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/level/chunk/LevelChunk;)V")
+	@Inject(at = @At("TAIL"), method = "markChunkPendingToSend(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/level/chunk/LevelChunk;)V", remap = false)
 	private static void markChunkPendingToSend(ServerPlayer player, LevelChunk ch, CallbackInfo ci)
 	{
-		ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).ifPresent(st ->
+		var st = LocksCapabilities.getStorage(ch);
+		if(st != null)
 		{
 			// Snapshot the lockables so iteration can't throw ConcurrentModificationException if the
 			// handler/storage is mutated on another path while this player is being synced.
 			for(Lockable lkb : st.snapshot())
-				LocksNetwork.MAIN.send(new AddLockableToChunkPacket(lkb, ch), PacketDistributor.PLAYER.with(player));
-		});
+				LocksNetwork.sendToPlayer(player, new AddLockableToChunkPacket(lkb, ch));
+		}
 	}
 }

@@ -27,14 +27,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import org.joml.Quaternionf;
 
-@Mod.EventBusSubscriber(modid = Locks.ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = Locks.ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.GAME)
 public final class LocksClientForgeEvents
 {
 	public static Lockable tooltipLockable;
@@ -47,12 +47,14 @@ public final class LocksClientForgeEvents
 	private LocksClientForgeEvents() {}
 
 	@SubscribeEvent
-	public static void onClientTick(TickEvent.ClientTickEvent e)
+	public static void onClientTick(ClientTickEvent.Pre e)
 	{
 		Minecraft mc = Minecraft.getInstance();
-		if(e.phase != TickEvent.Phase.START || mc.level == null || mc.isPaused())
+		if(mc.level == null || mc.isPaused())
 			return;
-		mc.level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).ifPresent(handler -> handler.getLoaded().values().forEach(lkb -> lkb.tick()));
+		var handler = LocksCapabilities.getHandler(mc.level);
+		if(handler != null)
+			handler.getLoaded().values().forEach(lkb -> lkb.tick());
 	}
 
 	@SubscribeEvent
@@ -64,7 +66,7 @@ public final class LocksClientForgeEvents
 		PoseStack mtx = new PoseStack();
 		MultiBufferSource.BufferSource buf = mc.renderBuffers().bufferSource();
 
-		renderLocks(mtx, buf, e.getFrustum(), e.getPartialTick());
+		renderLocks(mtx, buf, e.getFrustum(), e.getPartialTick().getGameTimeDeltaPartialTick(false));
 		renderSelection(mtx, buf);
 	}
 
@@ -85,7 +87,7 @@ public final class LocksClientForgeEvents
 		double dMin = 0d;
 		Vec3 look = o.add(mc.player.getViewVector(pt));
 
-		ILockableHandler handler = mc.level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(mc.level);
 		if(handler == null)
 			return;
 		for(Lockable lkb : handler.getLoaded().values())
@@ -132,7 +134,7 @@ public final class LocksClientForgeEvents
 	{
 		Minecraft mc = Minecraft.getInstance();
 		Vec3 o = LocksClientUtil.getCamera().getPosition();
-		ISelection select = mc.player.getCapability(LocksCapabilities.SELECTION).orElse(null);
+		ISelection select = LocksCapabilities.getSelection(mc.player);
 		if(select == null)
 			return;
 		BlockPos pos = select.get();

@@ -19,12 +19,12 @@ import net.minecraft.resources.ResourceLocation;
  */
 public interface SteelTagView
 {
-	/** Raw members of {@code forge:ingots/steel}. */
+	/** Raw members of {@code c:ingots/steel}. */
 	Collection<ResourceLocation> ingots();
 
-	/** Raw members of {@code forge:nuggets/steel}. */
+	/** Raw members of {@code c:nuggets/steel}. */
 	Collection<ResourceLocation> nuggets();
 
-	/** Raw members of {@code forge:ores/steel} (item and/or block members, depending on the source). */
+	/** Raw members of {@code c:ores/steel} (item and/or block members, depending on the source). */
 	Collection<ResourceLocation> ores();
 }

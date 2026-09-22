@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.entity.HopperBlockEntity;
 @Mixin(HopperBlockEntity.class)
 public class HopperBlockEntityMixin
 {
-	@Inject(at = @At("HEAD"), method = "getContainerAt(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/Container;", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "getContainerAt(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/Container;", cancellable = true, remap = false)
 	private static void getContainerAt(Level world, BlockPos pos, CallbackInfoReturnable<Container> cir)
 	{
 		if(LocksUtil.locked(world, pos))

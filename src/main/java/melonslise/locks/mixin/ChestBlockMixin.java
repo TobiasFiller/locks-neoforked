@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.state.properties.ChestType;
 @Mixin(ChestBlock.class)
 public class ChestBlockMixin
 {
-	@Inject(at = @At("HEAD"), method = "candidatePartnerFacing(Lnet/minecraft/world/item/context/BlockPlaceContext;Lnet/minecraft/core/Direction;)Lnet/minecraft/core/Direction;", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "candidatePartnerFacing(Lnet/minecraft/world/item/context/BlockPlaceContext;Lnet/minecraft/core/Direction;)Lnet/minecraft/core/Direction;", cancellable = true, remap = false)
 	private void candidatePartnerFacing(BlockPlaceContext ctx, Direction dir, CallbackInfoReturnable<Direction> cir)
 	{
 		Level world = ctx.getLevel();

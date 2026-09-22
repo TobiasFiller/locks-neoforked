@@ -22,7 +22,7 @@ import net.minecraft.world.level.material.FluidState;
 @Mixin(ExplosionDamageCalculator.class)
 public class ExplosionDamageCalculatorMixin
 {
-	@Inject(at = @At("RETURN"), method = "getBlockExplosionResistance(Lnet/minecraft/world/level/Explosion;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Ljava/util/Optional;", cancellable = true)
+	@Inject(at = @At("RETURN"), method = "getBlockExplosionResistance(Lnet/minecraft/world/level/Explosion;Lnet/minecraft/world/level/BlockGetter;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/material/FluidState;)Ljava/util/Optional;", cancellable = true, remap = false)
 	private void getBlockExplosionResistance(Explosion ex, BlockGetter world, BlockPos pos, BlockState state, FluidState fluid, CallbackInfoReturnable<Optional<Float>> cir)
 	{
 		cir.setReturnValue(cir.getReturnValue().map(r -> Math.max(r, LocksUtil.intersecting(ex.level, pos).filter(LocksPredicates.LOCKED).findFirst().map(lkb -> {

@@ -1,41 +1,60 @@
 package melonslise.locks.common.init;
 
-import melonslise.locks.Locks;
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import melonslise.locks.common.network.toclient.AddLockablePacket;
 import melonslise.locks.common.network.toclient.AddLockableToChunkPacket;
 import melonslise.locks.common.network.toclient.RemoveLockablePacket;
 import melonslise.locks.common.network.toclient.TryPinResultPacket;
 import melonslise.locks.common.network.toclient.UpdateLockablePacket;
 import melonslise.locks.common.network.toserver.TryPinPacket;
-import java.util.Optional;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.network.protocol.PacketFlow;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.ChannelBuilder;
-import net.minecraftforge.network.SimpleChannel;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerChunkCache;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 public final class LocksNetwork
 {
-	// Bumped for 1.7.5: the pin packets gained the picking-session fields (container id, request sequence, and
-	// the authoritative progress echoed back). Both acceptors are exact-match, so a mixed 1.7.4/1.7.5 connection
-	// is refused at the channel handshake instead of decoding bad state.
 	private static final String PROTOCOL_VERSION = "4";
-	public static final SimpleChannel MAIN = ChannelBuilder.named(ResourceLocation.fromNamespaceAndPath(Locks.ID, "main"))
-		.networkProtocolVersion(Integer.parseInt(PROTOCOL_VERSION))
-		.acceptedVersions((status, version) -> Integer.toString(version).equals(PROTOCOL_VERSION))
-		.simpleChannel();
 
 	private LocksNetwork() {}
 
-	public static void register()
+	public static void register(RegisterPayloadHandlersEvent event)
 	{
-		MAIN.messageBuilder(AddLockablePacket.class, 0, NetworkDirection.PLAY_TO_CLIENT).encoder(AddLockablePacket::encode).decoder(AddLockablePacket::decode).consumerMainThread(AddLockablePacket::handle).add();
-		MAIN.messageBuilder(AddLockableToChunkPacket.class, 1, NetworkDirection.PLAY_TO_CLIENT).encoder(AddLockableToChunkPacket::encode).decoder(AddLockableToChunkPacket::decode).consumerMainThread(AddLockableToChunkPacket::handle).add();
-		MAIN.messageBuilder(RemoveLockablePacket.class, 2, NetworkDirection.PLAY_TO_CLIENT).encoder(RemoveLockablePacket::encode).decoder(RemoveLockablePacket::decode).consumerMainThread(RemoveLockablePacket::handle).add();
-		MAIN.messageBuilder(UpdateLockablePacket.class, 3, NetworkDirection.PLAY_TO_CLIENT).encoder(UpdateLockablePacket::encode).decoder(UpdateLockablePacket::decode).consumerMainThread(UpdateLockablePacket::handle).add();
-		MAIN.messageBuilder(TryPinPacket.class, 4, NetworkDirection.PLAY_TO_SERVER).encoder(TryPinPacket::encode).decoder(TryPinPacket::decode).consumerMainThread(TryPinPacket::handle).add();
-		MAIN.messageBuilder(TryPinResultPacket.class, 5, NetworkDirection.PLAY_TO_CLIENT).encoder(TryPinResultPacket::encode).decoder(TryPinResultPacket::decode).consumerMainThread(TryPinResultPacket::handle).add();
-		MAIN.build();
+		PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+		registrar.playToClient(AddLockablePacket.TYPE, AddLockablePacket.STREAM_CODEC, AddLockablePacket::handle);
+		registrar.playToClient(AddLockableToChunkPacket.TYPE, AddLockableToChunkPacket.STREAM_CODEC, AddLockableToChunkPacket::handle);
+		registrar.playToClient(RemoveLockablePacket.TYPE, RemoveLockablePacket.STREAM_CODEC, RemoveLockablePacket::handle);
+		registrar.playToClient(UpdateLockablePacket.TYPE, UpdateLockablePacket.STREAM_CODEC, UpdateLockablePacket::handle);
+		registrar.playToServer(TryPinPacket.TYPE, TryPinPacket.STREAM_CODEC, TryPinPacket::handle);
+		registrar.playToClient(TryPinResultPacket.TYPE, TryPinResultPacket.STREAM_CODEC, TryPinResultPacket::handle);
+	}
+
+	public static void sendToServer(CustomPacketPayload payload)
+	{
+		PacketDistributor.sendToServer(payload);
+	}
+
+	public static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload)
+	{
+		PacketDistributor.sendToPlayer(player, payload);
+	}
+
+	public static void sendToTrackingChunk(LevelChunk chunk, CustomPacketPayload payload)
+	{
+		PacketDistributor.sendToPlayersTrackingChunk((net.minecraft.server.level.ServerLevel) chunk.getLevel(), chunk.getPos(), payload);
+	}
+
+	public static void sendToTrackingArea(Stream<LevelChunk> chunks, CustomPacketPayload payload)
+	{
+		chunks
+			.filter(Objects::nonNull)
+			.flatMap(chunk -> ((ServerChunkCache) chunk.getLevel().getChunkSource()).chunkMap.getPlayers(chunk.getPos(), false).stream())
+			.distinct()
+			.forEach(player -> sendToPlayer(player, payload));
 	}
 }

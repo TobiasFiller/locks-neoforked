@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class LocksEnchantments
 {
@@ -45,11 +45,11 @@ public final class LocksEnchantments
 
 	private static boolean isEnabled(ResourceKey<Enchantment> enchantment)
 	{
-		ForgeConfigSpec.BooleanValue config = enableConfig(enchantment);
+		ModConfigSpec.BooleanValue config = enableConfig(enchantment);
 		return config == null || config.get();
 	}
 
-	private static ForgeConfigSpec.BooleanValue enableConfig(ResourceKey<Enchantment> enchantment)
+	private static ModConfigSpec.BooleanValue enableConfig(ResourceKey<Enchantment> enchantment)
 	{
 		if(enchantment == SHOCKING)
 			return LocksServerConfig.ENABLE_SHOCKING;

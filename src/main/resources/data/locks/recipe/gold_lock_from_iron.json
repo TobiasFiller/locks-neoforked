@@ -1,9 +1,9 @@
 {
 	"type": "minecraft:crafting_shaped",
-	"conditions":
+	"neoforge:conditions":
 	[
 		{
-			"type": "forge:not",
+			"type": "neoforge:not",
 			"value":
 			{
 				"type": "locks:steel",

@@ -66,31 +66,28 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.LootTableLoadEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.event.village.VillagerTradesEvent;
-import net.minecraftforge.event.village.WandererTradesEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.event.level.ChunkEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.event.TagsUpdatedEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.Event;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.LootTableLoadEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.village.VillagerTradesEvent;
+import net.neoforged.neoforge.event.village.WandererTradesEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.neoforge.common.util.TriState;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
-@Mod.EventBusSubscriber(modid = Locks.ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = Locks.ID, bus = EventBusSubscriber.Bus.GAME)
 public final class LocksForgeEvents
 {
 	public static final Component LOCKED_MESSAGE = Component.translatable(Locks.ID + ".status.locked");
@@ -98,32 +95,36 @@ public final class LocksForgeEvents
 
 	private LocksForgeEvents() {}
 
+	private static boolean serverConfigBool(ModConfigSpec.BooleanValue value, boolean fallback)
+	{
+		try
+		{
+			return LocksServerConfig.SPEC.isLoaded() ? value.get() : fallback;
+		}
+		catch(IllegalStateException ex)
+		{
+			return fallback;
+		}
+	}
+
+	private static String serverConfigString(ModConfigSpec.ConfigValue<String> value, String fallback)
+	{
+		try
+		{
+			return LocksServerConfig.SPEC.isLoaded() ? value.get() : fallback;
+		}
+		catch(IllegalStateException ex)
+		{
+			return fallback;
+		}
+	}
+
 	// Server-side menu open, shared by the physical-pick and itemless entry points. The mode is decided
 	// here, once, and shipped to the client purely so the screen renders the right tool; the client never
 	// gets to tell the server which mode it is playing.
 	private static void openPicking(Player player, Lockable lkb, LockPickingMode mode)
 	{
-		((ServerPlayer) player).openMenu(
-			new LockPickingContainer.Provider(InteractionHand.MAIN_HAND, mode, lkb),
-			new LockPickingContainer.Writer(InteractionHand.MAIN_HAND, mode, lkb));
-	}
-
-	@SubscribeEvent
-	public static void attachCapabilitiesToWorld(AttachCapabilitiesEvent<Level> e)
-	{
-		LocksCapabilities.attachToWorld(e);
-	}
-
-	@SubscribeEvent
-	public static void attachCapabilitiesToChunk(AttachCapabilitiesEvent<LevelChunk> e)
-	{
-		LocksCapabilities.attachToChunk(e);
-	}
-
-	@SubscribeEvent
-	public static void attachCapabilitiesToEntity(AttachCapabilitiesEvent<Entity> e)
-	{
-		LocksCapabilities.attachToEntity(e);
+		((ServerPlayer) player).openMenu(new LockPickingContainer.Provider(InteractionHand.MAIN_HAND, mode, lkb), new LockPickingContainer.Writer(InteractionHand.MAIN_HAND, mode, lkb));
 	}
 
 	@SubscribeEvent
@@ -139,7 +140,10 @@ public final class LocksForgeEvents
 		{
 			// Resolve the persisted lockable id counter on the main thread before any chunk/structure
 			// generation can allocate ids off-thread (C2ME), keeping ids unique across server restarts.
-			level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).ifPresent(ILockableHandler::initIds);
+			{
+				ILockableHandler handler = LocksCapabilities.getHandler(level);
+				if(handler != null) handler.initIds();
+			}
 			if (level.dimension() == Level.OVERWORLD)
 			{
 				loadComboSalt(level.getServer());
@@ -243,14 +247,14 @@ public final class LocksForgeEvents
 	@SubscribeEvent
 	public static void addVillagerTrades(VillagerTradesEvent e)
 	{
-		if(!LocksServerConfig.ENABLE_VILLAGER_TRADES.get())
+		if(!serverConfigBool(LocksServerConfig.ENABLE_VILLAGER_TRADES, true))
 			return;
-		ResourceLocation wantedProfession = ResourceLocation.tryParse(LocksServerConfig.VILLAGER_PROFESSION.get());
-		if(wantedProfession == null || !wantedProfession.equals(ForgeRegistries.VILLAGER_PROFESSIONS.getKey(e.getType())))
+		ResourceLocation wantedProfession = ResourceLocation.tryParse(serverConfigString(LocksServerConfig.VILLAGER_PROFESSION, "minecraft:toolsmith"));
+		if(wantedProfession == null || !wantedProfession.equals(BuiltInRegistries.VILLAGER_PROFESSION.getKey(e.getType())))
 			return;
-		boolean picks = LocksServerConfig.ENABLE_VILLAGER_LOCKPICK_TRADES.get();
-		boolean mechs = LocksServerConfig.ENABLE_VILLAGER_MECHANISM_TRADES.get();
-		boolean locks = LocksServerConfig.ENABLE_VILLAGER_LOCK_TRADES.get();
+		boolean picks = serverConfigBool(LocksServerConfig.ENABLE_VILLAGER_LOCKPICK_TRADES, true);
+		boolean mechs = serverConfigBool(LocksServerConfig.ENABLE_VILLAGER_MECHANISM_TRADES, true);
+		boolean locks = serverConfigBool(LocksServerConfig.ENABLE_VILLAGER_LOCK_TRADES, true);
 		Int2ObjectMap<List<ItemListing>> levels = e.getTrades();
 		List<ItemListing> trades;
 
@@ -283,11 +287,11 @@ public final class LocksForgeEvents
 	@SubscribeEvent
 	public static void addWandererTrades(WandererTradesEvent e)
 	{
-		if(!LocksServerConfig.ENABLE_WANDERER_TRADES.get())
+		if(!serverConfigBool(LocksServerConfig.ENABLE_WANDERER_TRADES, true))
 			return;
-		boolean picks = LocksServerConfig.ENABLE_WANDERER_LOCKPICK_TRADES.get();
-		boolean locks = LocksServerConfig.ENABLE_WANDERER_LOCK_TRADES.get();
-		boolean mechs = LocksServerConfig.ENABLE_WANDERER_MECHANISM_TRADES.get();
+		boolean picks = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_LOCKPICK_TRADES, true);
+		boolean locks = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_LOCK_TRADES, true);
+		boolean mechs = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_MECHANISM_TRADES, true);
 		List<ItemListing> generic = e.getGenericTrades();
 		List<ItemListing> rare = e.getRareTrades();
 		if(picks)
@@ -322,7 +326,7 @@ public final class LocksForgeEvents
 		// under C2ME this handler can fire re-entrantly on the main thread while that thread is draining the chunk
 		// executor (BlockableEventLoop#managedBlock), and getChunk(...,FULL,true) would re-park on the very future
 		// this thread is in the middle of completing -> permanent hang.
-		ILockableStorage storage = ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+		ILockableStorage storage = LocksCapabilities.getStorage(ch);
 		if(storage == null)
 			return;
 		int chX = ch.getPos().x, chZ = ch.getPos().z;
@@ -333,7 +337,7 @@ public final class LocksForgeEvents
 			// level.getChunk(...) here.
 			if(!level.hasChunk(chX, chZ))
 				return;
-			ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+			ILockableHandler handler = LocksCapabilities.getHandler(level);
 			if(handler == null)
 				return;
 			handler.registerChunkStorage(ch, storage, false);
@@ -346,10 +350,10 @@ public final class LocksForgeEvents
 		if(!(e.getChunk() instanceof LevelChunk ch))
 			return;
 		Level level = ch.getLevel();
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if(handler == null)
 			return;
-		ILockableStorage storage = ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+		ILockableStorage storage = LocksCapabilities.getStorage(ch);
 		if(storage == null)
 			return;
 		// Snapshot the storage now: reading the per-chunk map is thread-safe, but the handler mutation must
@@ -374,7 +378,7 @@ public final class LocksForgeEvents
 		BlockPos pos = e.getPos();
 		Level world = e.getLevel();
 		Player player = e.getEntity();
-		ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(world);
 		if(handler == null)
 			return;
 		Int2ObjectMap<Lockable> chunkLockables = handler.getInChunk(pos);
@@ -395,7 +399,7 @@ public final class LocksForgeEvents
 		if(!world.isClientSide && !intersect.isEmpty())
 		{
 			lockChunk = world.getChunkAt(pos);
-			ILockableStorage st = lockChunk.getCapability(LocksCapabilities.LOCKABLE_STORAGE).orElse(null);
+			ILockableStorage st = LocksCapabilities.getStorage(lockChunk);
 			if(st != null)
 			{
 				handler.registerChunkStorage(lockChunk, st, false);
@@ -431,7 +435,7 @@ public final class LocksForgeEvents
 		// with shields or other offhand items — Forge fires the main-hand event independently.
 		if(e.getHand() != InteractionHand.MAIN_HAND)
 		{
-			e.setUseBlock(Event.Result.DENY);
+			e.setUseBlock(TriState.FALSE);
 			return;
 		}
 		ItemStack stack = e.getItemStack();
@@ -442,15 +446,15 @@ public final class LocksForgeEvents
 		{
 			Lockable lkb = locked;
 			boolean yieldToBlock = false;
-			e.setUseBlock(Event.Result.DENY);
-			e.setUseItem(Event.Result.DENY);
+			e.setUseBlock(TriState.FALSE);
+			e.setUseItem(TriState.FALSE);
 
 			// Self-heal the client: push the blocking lock to the interacting player so a desynced or missing
 			// client copy re-renders and the pick minigame can resolve it. Bounded to actual blocked interactions.
 			if(!world.isClientSide && lockChunk != null && player instanceof ServerPlayer sp)
 			{
 				LevelChunk syncChunk = lockChunk;
-				LocksNetwork.MAIN.send(new AddLockableToChunkPacket(lkb, syncChunk), PacketDistributor.PLAYER.with(sp));
+				LocksNetwork.sendToPlayer(sp, new AddLockableToChunkPacket(lkb, syncChunk));
 			}
 
 			if(LocksTagHelper.isLockPick(stack))
@@ -508,7 +512,7 @@ public final class LocksForgeEvents
 			else if(stack.getItem() == LocksItems.KEY_RING.get() && KeyRingItem.containsId(stack, lkb.lock.id))
 			{
 				// Key ring with matching key: find first matching key and toggle
-				IItemHandler inv = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+				IItemHandler inv = LocksCapabilities.getItemHandler(stack);
 				if(inv == null) return;
 				for(int a = 0; a < inv.getSlots(); ++a)
 				{
@@ -597,7 +601,7 @@ public final class LocksForgeEvents
 					ItemStack curioRing = CuriosHelper.findMatchingKeyRing(player, lkb.lock.id);
 					if (!curioRing.isEmpty())
 					{
-						IItemHandler curioInv = curioRing.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+						IItemHandler curioInv = LocksCapabilities.getItemHandler(curioRing);
 						if (curioInv == null) return;
 						for (int a = 0; a < curioInv.getSlots(); ++a)
 						{
@@ -678,7 +682,7 @@ public final class LocksForgeEvents
 			// so one click cannot both open the chest and pry the lock off it.
 			if(yieldToBlock)
 			{
-				e.setUseBlock(Event.Result.DEFAULT);
+				e.setUseBlock(TriState.DEFAULT);
 				return;
 			}
 
@@ -697,8 +701,8 @@ public final class LocksForgeEvents
 
 			if(stack.getItem() == LocksItems.MASTER_KEY.get())
 			{
-				e.setUseBlock(Event.Result.DENY);
-				e.setUseItem(Event.Result.DENY);
+				e.setUseBlock(TriState.FALSE);
+				e.setUseItem(TriState.FALSE);
 				world.playSound(player, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 				if(!world.isClientSide)
 					for(Lockable l : intersect)
@@ -713,8 +717,8 @@ public final class LocksForgeEvents
 					if(l.lock.id == id) { hasMatch = true; break; }
 				if(hasMatch)
 				{
-					e.setUseBlock(Event.Result.DENY);
-					e.setUseItem(Event.Result.DENY);
+					e.setUseBlock(TriState.FALSE);
+					e.setUseItem(TriState.FALSE);
 					world.playSound(player, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 					if(!world.isClientSide)
 						for(Lockable l : intersect)
@@ -725,7 +729,7 @@ public final class LocksForgeEvents
 			}
 			else if(stack.getItem() == LocksItems.KEY_RING.get())
 			{
-				IItemHandler inv = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+				IItemHandler inv = LocksCapabilities.getItemHandler(stack);
 				if(inv != null)
 				{
 					for(int a = 0; a < inv.getSlots(); ++a)
@@ -748,8 +752,8 @@ public final class LocksForgeEvents
 						}
 						if(matched)
 						{
-							e.setUseBlock(Event.Result.DENY);
-							e.setUseItem(Event.Result.DENY);
+							e.setUseBlock(TriState.FALSE);
+							e.setUseItem(TriState.FALSE);
 							world.playSound(player, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 							relocked = true;
 							break;
@@ -770,7 +774,7 @@ public final class LocksForgeEvents
 					ItemStack curioRing = CuriosHelper.findMatchingKeyRing(player, candidate.lock.id);
 					if(!curioRing.isEmpty())
 					{
-						IItemHandler curioInv = curioRing.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+						IItemHandler curioInv = LocksCapabilities.getItemHandler(curioRing);
 						if(curioInv != null)
 						{
 							for(int a = 0; a < curioInv.getSlots(); ++a)
@@ -793,8 +797,8 @@ public final class LocksForgeEvents
 								}
 								if(matched)
 								{
-									e.setUseBlock(Event.Result.DENY);
-									e.setUseItem(Event.Result.DENY);
+									e.setUseBlock(TriState.FALSE);
+									e.setUseItem(TriState.FALSE);
 									world.playSound(player, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 									relocked = true;
 									break;
@@ -822,7 +826,7 @@ public final class LocksForgeEvents
 					match.add(lkb);
 			if(match.isEmpty())
 				return;
-			e.setUseBlock(Event.Result.DENY);
+			e.setUseBlock(TriState.FALSE);
 			world.playSound(player, pos, SoundEvents.ITEM_BREAK, SoundSource.BLOCKS, 0.8f, 0.8f + world.random.nextFloat() * 0.4f);
 			player.swing(InteractionHand.MAIN_HAND);
 			if(!world.isClientSide)
@@ -849,22 +853,19 @@ public final class LocksForgeEvents
 		ItemStack curioRing = CuriosHelper.findAnyKeyRing(player);
 		if (curioRing.isEmpty())
 			return;
-		((ServerPlayer) player).openMenu(
-			new KeyRingContainer.Provider(curioRing),
-			new KeyRingContainer.CurioWriter());
+		((ServerPlayer) player).openMenu(new KeyRingContainer.Provider(curioRing), new KeyRingContainer.CurioWriter());
 		e.setCanceled(true);
 		e.setCancellationResult(InteractionResult.SUCCESS);
 	}
 
 	@SubscribeEvent
-	public static void onPlayerTick(TickEvent.PlayerTickEvent e)
+	public static void onPlayerTick(PlayerTickEvent.Pre e)
 	{
-		if(e.phase != Phase.START)
-			return;
-		ISelection select = e.player.getCapability(LocksCapabilities.SELECTION).orElse(null);
+		Player player = e.getEntity();
+		ISelection select = LocksCapabilities.getSelection(player);
 		if (select == null || select.get() == null)
 			return;
-		for (ItemStack stack : e.player.getHandSlots())
+		for (ItemStack stack : player.getHandSlots())
 			if(LocksTagHelper.isLock(stack))
 				return;
 		select.set(null);
@@ -909,7 +910,7 @@ public final class LocksForgeEvents
 
 	private static Lockable findLockedAt(Level world, BlockPos pos)
 	{
-		ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(world);
 		if(handler == null)
 			return null;
 		Int2ObjectMap<Lockable> chunkLockables = handler.getInChunk(pos);

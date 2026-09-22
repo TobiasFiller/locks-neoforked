@@ -6,7 +6,7 @@ import java.util.Set;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
-import net.minecraftforge.fml.loading.LoadingModList;
+import net.neoforged.fml.loading.LoadingModList;
 
 /**
  * Gates the {@code locks_carryon.mixins.json} config so its mixins only apply when the Carry On mod

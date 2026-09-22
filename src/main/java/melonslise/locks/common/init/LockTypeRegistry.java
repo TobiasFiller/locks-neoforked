@@ -1,5 +1,6 @@
 package melonslise.locks.common.init;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,10 +23,9 @@ import melonslise.locks.common.config.LocksConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.Item;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.locating.IModFile;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.locating.IModFile;
 
 public final class LockTypeRegistry
 {
@@ -325,7 +325,7 @@ public final class LockTypeRegistry
 
 	public static LockStats getLockStats(Item item)
 	{
-		ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
+		ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
 		LockStats stats = LOCK_STATS.get(id);
 		if (stats == null)
 		{
@@ -337,7 +337,7 @@ public final class LockTypeRegistry
 
 	public static LockPickStats getLockPickStats(Item item)
 	{
-		ResourceLocation id = ForgeRegistries.ITEMS.getKey(item);
+		ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);
 		LockPickStats stats = LOCKPICK_STATS.get(id);
 		if (stats == null)
 		{

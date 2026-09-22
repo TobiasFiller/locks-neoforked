@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.Block;
 
 /**
  * {@link SteelTagView} backed by a live {@link RegistryAccess}, used after tags load (e.g. from
- * {@code TagsUpdatedEvent}). For ores it reads <em>both</em> the item tag and the block tag {@code forge:ores/steel}
+ * {@code TagsUpdatedEvent}). For ores it reads <em>both</em> the item tag and the block tag {@code c:ores/steel}
  * so a foreign steel ore that only tags its block is still detected.
  */
 public final class RegistryTagView implements SteelTagView

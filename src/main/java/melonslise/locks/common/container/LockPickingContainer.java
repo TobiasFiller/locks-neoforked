@@ -32,16 +32,16 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.IContainerFactory;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.network.IContainerFactory;
 
 public class LockPickingContainer extends AbstractContainerMenu
 {
@@ -141,7 +141,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 	{
 		if(level.isClientSide)
 			return this.lockable;
-		ILockableHandler handler = level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(level);
 		if(handler == null)
 			return null;
 		Lockable current = handler.getLoaded().get(this.targetId);
@@ -167,7 +167,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 	{
 		TryPinResultPacket pkt = new TryPinResultPacket(this.containerId, sequence, pin, progress, correct, reset, terminal);
 		this.lastResult = pkt;
-		LocksNetwork.MAIN.send(pkt, PacketDistributor.PLAYER.with((ServerPlayer) this.player));
+		LocksNetwork.sendToPlayer((ServerPlayer) this.player, pkt);
 	}
 
 	@Override
@@ -196,7 +196,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 		if(sequence <= this.lastSequence)
 		{
 			if(this.lastResult != null && sequence == this.lastSequence)
-				LocksNetwork.MAIN.send(this.lastResult, PacketDistributor.PLAYER.with((ServerPlayer) this.player));
+				LocksNetwork.sendToPlayer((ServerPlayer) this.player, this.lastResult);
 			return;
 		}
 		Level level = this.player.level();
@@ -361,7 +361,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 		// Prefer the client's already-loaded instance (keeps the picked lock and the rendered lock the same
 		// object), but fall back to the reconstructed one if the client hasn't loaded it yet — so the minigame
 		// never dead-ends on a sync race.
-		ILockableHandler handler = inv.player.level().getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(inv.player.level());
 		Lockable lkb = received;
 		if(handler != null)
 		{
@@ -372,7 +372,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 		return new LockPickingContainer(id, inv.player, hand, mode, lkb);
 	};
 
-	public static class Writer implements Consumer<FriendlyByteBuf>
+	public static class Writer implements Consumer<RegistryFriendlyByteBuf>
 	{
 		public final InteractionHand hand;
 		public final LockPickingMode mode;
@@ -386,7 +386,7 @@ public class LockPickingContainer extends AbstractContainerMenu
 		}
 
 		@Override
-		public void accept(FriendlyByteBuf buf)
+		public void accept(RegistryFriendlyByteBuf buf)
 		{
 			buf.writeEnum(this.hand);
 			// Mode goes before the lockable so the variable-length tail stays last.

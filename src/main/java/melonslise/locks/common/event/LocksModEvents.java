@@ -1,23 +1,22 @@
 package melonslise.locks.common.event;
 
 import melonslise.locks.Locks;
-import melonslise.locks.common.capability.ILockableHandler;
-import melonslise.locks.common.capability.ILockableStorage;
-import melonslise.locks.common.capability.ISelection;
 import melonslise.locks.common.compat.CarryOnCompat;
 import melonslise.locks.common.compat.CuriosHelper;
 import melonslise.locks.common.compat.RespawningStructuresCompat;
 import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LockTypeRegistry;
+import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.init.LocksNetwork;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
-@Mod.EventBusSubscriber(modid = Locks.ID, bus = Mod.EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = Locks.ID, bus = EventBusSubscriber.Bus.MOD)
 public final class LocksModEvents
 {
 	private LocksModEvents() {}
@@ -25,7 +24,6 @@ public final class LocksModEvents
 	@SubscribeEvent
 	public static void onSetup(FMLCommonSetupEvent e)
 	{
-		LocksNetwork.register();
 		e.enqueueWork(CuriosHelper::init);
 		e.enqueueWork(RespawningStructuresCompat::init);
 		e.enqueueWork(CarryOnCompat::init);
@@ -34,9 +32,13 @@ public final class LocksModEvents
 	@SubscribeEvent
 	public static void onRegisterCaps(RegisterCapabilitiesEvent event)
 	{
-		event.register(ILockableHandler.class);
-		event.register(ILockableStorage.class);
-		event.register(ISelection.class);
+		LocksCapabilities.registerCapabilities(event);
+	}
+
+	@SubscribeEvent
+	public static void onRegisterPayloads(RegisterPayloadHandlersEvent event)
+	{
+		LocksNetwork.register(event);
 	}
 
 	@SubscribeEvent

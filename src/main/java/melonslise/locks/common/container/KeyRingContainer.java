@@ -3,6 +3,7 @@ package melonslise.locks.common.container;
 import java.util.function.Consumer;
 
 import melonslise.locks.common.compat.CuriosHelper;
+import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.init.LocksMenuTypes;
 import melonslise.locks.common.init.LocksSoundEvents;
 import net.minecraft.world.entity.player.Player;
@@ -12,13 +13,13 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.IContainerFactory;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.SlotItemHandler;
+import net.neoforged.neoforge.network.IContainerFactory;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.SlotItemHandler;
 
 public class KeyRingContainer extends AbstractContainerMenu
 {
@@ -57,7 +58,7 @@ public class KeyRingContainer extends AbstractContainerMenu
 	{
 		super(LocksMenuTypes.KEY_RING.get(), id);
 		this.stack = stack;
-		this.inv = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+		this.inv = LocksCapabilities.getItemHandler(stack);
 		if(this.inv == null)
 			throw new IllegalStateException("Key ring item missing inventory capability");
 		this.rows = inv.getSlots() / 9;
@@ -133,7 +134,7 @@ public class KeyRingContainer extends AbstractContainerMenu
 		}
 	}
 
-	public static class Writer implements Consumer<FriendlyByteBuf>
+	public static class Writer implements Consumer<RegistryFriendlyByteBuf>
 	{
 		public final InteractionHand hand;
 
@@ -143,17 +144,17 @@ public class KeyRingContainer extends AbstractContainerMenu
 		}
 
 		@Override
-		public void accept(FriendlyByteBuf buffer)
+		public void accept(RegistryFriendlyByteBuf buffer)
 		{
 			buffer.writeBoolean(false);
 			buffer.writeEnum(this.hand);
 		}
 	}
 
-	public static class CurioWriter implements Consumer<FriendlyByteBuf>
+	public static class CurioWriter implements Consumer<RegistryFriendlyByteBuf>
 	{
 		@Override
-		public void accept(FriendlyByteBuf buffer)
+		public void accept(RegistryFriendlyByteBuf buffer)
 		{
 			buffer.writeBoolean(true);
 		}

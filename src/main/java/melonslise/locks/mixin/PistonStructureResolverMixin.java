@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.piston.PistonStructureResolver;
 @Mixin(PistonStructureResolver.class)
 public class PistonStructureResolverMixin
 {
-	@Inject(at = @At("HEAD"), method = "resolve", cancellable = true)
+	@Inject(at = @At("HEAD"), method = "resolve", cancellable = true, remap = false)
 	private void resolve(CallbackInfoReturnable<Boolean> cir)
 	{
 		PistonStructureResolver h = (PistonStructureResolver) (Object) this;

@@ -22,7 +22,7 @@ import net.minecraft.world.level.block.state.BlockState;
 @Mixin(ServerLevel.class)
 public class ServerLevelMixin
 {
-	@Inject(at = @At("HEAD"), method = "sendBlockUpdated(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/state/BlockState;I)V")
+	@Inject(at = @At("HEAD"), method = "sendBlockUpdated(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/block/state/BlockState;I)V", remap = false)
 	private void sendBlockUpdated(BlockPos pos, BlockState oldState, BlockState newState, int flag, CallbackInfo ci)
 	{
 		if(oldState.is(newState.getBlock()))
@@ -33,7 +33,7 @@ public class ServerLevelMixin
 		{
 			if(LocksServerConfig.canLock(world, immutablePos))
 				return;
-			ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+			ILockableHandler handler = LocksCapabilities.getHandler(world);
 			if(handler == null)
 				return;
 			Int2ObjectMap<Lockable> chunkLockables = handler.getInChunk(immutablePos);

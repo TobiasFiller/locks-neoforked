@@ -1,18 +1,18 @@
 package melonslise.locks.common.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class LocksClientConfig
 {
-	public static final ForgeConfigSpec SPEC;
+	public static final ModConfigSpec SPEC;
 
-	public static final ForgeConfigSpec.BooleanValue DEAF_MODE;
+	public static final ModConfigSpec.BooleanValue DEAF_MODE;
 
 	private LocksClientConfig() {}
 
 	static
 	{
-		ForgeConfigSpec.Builder cfg = new ForgeConfigSpec.Builder();
+		ModConfigSpec.Builder cfg = new ModConfigSpec.Builder();
 
 		DEAF_MODE = cfg
 			.comment("Display visual feedback when trying to use a locked block for certain hearing impaired individuals")

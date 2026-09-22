@@ -1,5 +1,6 @@
 package melonslise.locks.client.gui;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,10 +30,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class LockPickingScreen extends AbstractContainerScreen<LockPickingContainer>
@@ -123,7 +122,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 
 	public static ResourceLocation getTextureFor(ItemStack stack, ResourceLocation fallback)
 	{
-		ResourceLocation key = ForgeRegistries.ITEMS.getKey(stack.getItem());
+		ResourceLocation key = BuiltInRegistries.ITEM.getKey(stack.getItem());
 		ResourceLocation tex = ResourceLocation.fromNamespaceAndPath(key.getNamespace(), "textures/lockpicking/" + key.getPath() + ".png");
 		try
 		{
@@ -271,7 +270,7 @@ public class LockPickingScreen extends AbstractContainerScreen<LockPickingContai
 		this.currPin = pin;
 		this.pendingSequence = this.nextSequence++;
 		this.pendingTicks = 0;
-		LocksNetwork.MAIN.send(new TryPinPacket(this.getMenu().containerId, this.pendingSequence, (byte) pin), PacketDistributor.SERVER.noArg());
+		LocksNetwork.sendToServer(new TryPinPacket(this.getMenu().containerId, this.pendingSequence, (byte) pin));
 		return true;
 	}
 

@@ -1,5 +1,6 @@
 package melonslise.locks.common.config;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -18,84 +19,83 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import melonslise.locks.common.init.LocksEnchantments;
 import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class LocksServerConfig
 {
-	public static final ForgeConfigSpec SPEC;
+	public static final ModConfigSpec SPEC;
 
-	public static final ForgeConfigSpec.IntValue MAX_LOCKABLE_VOLUME;
-	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOCKABLE_BLOCKS;
-	public static final ForgeConfigSpec.BooleanValue ALLOW_REMOVING_LOCKS;
-	public static final ForgeConfigSpec.BooleanValue PROTECT_LOCKABLES;
-	public static final ForgeConfigSpec.BooleanValue EASY_LOCK;
+	public static final ModConfigSpec.IntValue MAX_LOCKABLE_VOLUME;
+	public static final ModConfigSpec.ConfigValue<List<? extends String>> LOCKABLE_BLOCKS;
+	public static final ModConfigSpec.BooleanValue ALLOW_REMOVING_LOCKS;
+	public static final ModConfigSpec.BooleanValue PROTECT_LOCKABLES;
+	public static final ModConfigSpec.BooleanValue EASY_LOCK;
 
-	public static final ForgeConfigSpec.EnumValue<SteelMaterialMode> STEEL_MATERIAL_MODE;
+	public static final ModConfigSpec.EnumValue<SteelMaterialMode> STEEL_MATERIAL_MODE;
 
-	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOCKABLE_TAGS;
+	public static final ModConfigSpec.ConfigValue<List<? extends String>> LOCKABLE_TAGS;
 
-	public static final ForgeConfigSpec.BooleanValue HIDE_LOCK_ID;
-	public static final ForgeConfigSpec.BooleanValue HIDE_HUD_ENCHANTMENTS;
-	public static final ForgeConfigSpec.BooleanValue HIDE_HUD_TOOLTIP;
+	public static final ModConfigSpec.BooleanValue HIDE_LOCK_ID;
+	public static final ModConfigSpec.BooleanValue HIDE_HUD_ENCHANTMENTS;
+	public static final ModConfigSpec.BooleanValue HIDE_HUD_TOOLTIP;
 
-	public static final ForgeConfigSpec.BooleanValue ENABLE_SHOCKING;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_STURDY;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_COMPLEXITY;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_SILENT;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_AUTO_PICK;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_REINFORCED;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_AWARENESS;
+	public static final ModConfigSpec.BooleanValue ENABLE_SHOCKING;
+	public static final ModConfigSpec.BooleanValue ENABLE_STURDY;
+	public static final ModConfigSpec.BooleanValue ENABLE_COMPLEXITY;
+	public static final ModConfigSpec.BooleanValue ENABLE_SILENT;
+	public static final ModConfigSpec.BooleanValue ENABLE_AUTO_PICK;
+	public static final ModConfigSpec.BooleanValue ENABLE_REINFORCED;
+	public static final ModConfigSpec.BooleanValue ENABLE_AWARENESS;
 
 	// Lock pick enchantments
-	public static final ForgeConfigSpec.BooleanValue ENABLE_FINESSE;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_ATTUNEMENT;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_GROUNDED;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_QUIET_HAND;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_LAST_CATCH;
+	public static final ModConfigSpec.BooleanValue ENABLE_FINESSE;
+	public static final ModConfigSpec.BooleanValue ENABLE_ATTUNEMENT;
+	public static final ModConfigSpec.BooleanValue ENABLE_GROUNDED;
+	public static final ModConfigSpec.BooleanValue ENABLE_QUIET_HAND;
+	public static final ModConfigSpec.BooleanValue ENABLE_LAST_CATCH;
 
 	// Lock pick enchantment tuning
-	public static final ForgeConfigSpec.DoubleValue FINESSE_WEAR_REDUCTION_PER_LEVEL;
-	public static final ForgeConfigSpec.DoubleValue ATTUNEMENT_STRENGTH_PER_LEVEL;
-	public static final ForgeConfigSpec.DoubleValue GROUNDED_REDUCTION_PER_LEVEL;
-	public static final ForgeConfigSpec.DoubleValue LAST_CATCH_SAVE_CHANCE;
-	public static final ForgeConfigSpec.DoubleValue QUIET_HAND_VOLUME;
-	public static final ForgeConfigSpec.DoubleValue STURDY_WEAR_PER_LEVEL;
-	public static final ForgeConfigSpec.DoubleValue NEAR_MISS_WEAR_MULTIPLIER;
+	public static final ModConfigSpec.DoubleValue FINESSE_WEAR_REDUCTION_PER_LEVEL;
+	public static final ModConfigSpec.DoubleValue ATTUNEMENT_STRENGTH_PER_LEVEL;
+	public static final ModConfigSpec.DoubleValue GROUNDED_REDUCTION_PER_LEVEL;
+	public static final ModConfigSpec.DoubleValue LAST_CATCH_SAVE_CHANCE;
+	public static final ModConfigSpec.DoubleValue QUIET_HAND_VOLUME;
+	public static final ModConfigSpec.DoubleValue STURDY_WEAR_PER_LEVEL;
+	public static final ModConfigSpec.DoubleValue NEAR_MISS_WEAR_MULTIPLIER;
 
 	// Shocking enchantment tuning
-	public static final ForgeConfigSpec.DoubleValue SHOCKING_DAMAGE_BASE;
-	public static final ForgeConfigSpec.DoubleValue SHOCKING_DAMAGE_PER_LEVEL;
-	public static final ForgeConfigSpec.DoubleValue SHOCKING_MAX_DAMAGE;
-	public static final ForgeConfigSpec.BooleanValue SHOCKING_REQUIRES_ENCHANTMENT;
-	public static final ForgeConfigSpec.IntValue SHOCKING_COOLDOWN_TICKS;
-	public static final ForgeConfigSpec.BooleanValue SHOCKING_ON_PICK_BREAK;
-	public static final ForgeConfigSpec.BooleanValue SHOCKING_ON_WRONG_PIN;
-	public static final ForgeConfigSpec.BooleanValue SHOCKING_ON_UNAUTHORIZED_INTERACTION;
-	public static final ForgeConfigSpec.BooleanValue SHOCKING_ON_BLOCK_BREAK_ATTEMPT;
+	public static final ModConfigSpec.DoubleValue SHOCKING_DAMAGE_BASE;
+	public static final ModConfigSpec.DoubleValue SHOCKING_DAMAGE_PER_LEVEL;
+	public static final ModConfigSpec.DoubleValue SHOCKING_MAX_DAMAGE;
+	public static final ModConfigSpec.BooleanValue SHOCKING_REQUIRES_ENCHANTMENT;
+	public static final ModConfigSpec.IntValue SHOCKING_COOLDOWN_TICKS;
+	public static final ModConfigSpec.BooleanValue SHOCKING_ON_PICK_BREAK;
+	public static final ModConfigSpec.BooleanValue SHOCKING_ON_WRONG_PIN;
+	public static final ModConfigSpec.BooleanValue SHOCKING_ON_UNAUTHORIZED_INTERACTION;
+	public static final ModConfigSpec.BooleanValue SHOCKING_ON_BLOCK_BREAK_ATTEMPT;
 
-	public static final ForgeConfigSpec.BooleanValue NETHERITE_PICK_UNBREAKABLE;
-	public static final ForgeConfigSpec.BooleanValue ALLOW_ITEMLESS_LOCK_PICKING;
+	public static final ModConfigSpec.BooleanValue NETHERITE_PICK_UNBREAKABLE;
+	public static final ModConfigSpec.BooleanValue ALLOW_ITEMLESS_LOCK_PICKING;
 
-	public static final ForgeConfigSpec.ConfigValue<List<? extends String>> LOOT_TABLE_PATTERNS;
+	public static final ModConfigSpec.ConfigValue<List<? extends String>> LOOT_TABLE_PATTERNS;
 
 	// Trades
-	public static final ForgeConfigSpec.BooleanValue ENABLE_VILLAGER_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_VILLAGER_LOCKPICK_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_VILLAGER_LOCK_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_VILLAGER_MECHANISM_TRADES;
-	public static final ForgeConfigSpec.ConfigValue<String> VILLAGER_PROFESSION;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_WANDERER_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_WANDERER_LOCKPICK_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_WANDERER_LOCK_TRADES;
-	public static final ForgeConfigSpec.BooleanValue ENABLE_WANDERER_MECHANISM_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_VILLAGER_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_VILLAGER_LOCKPICK_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_VILLAGER_LOCK_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_VILLAGER_MECHANISM_TRADES;
+	public static final ModConfigSpec.ConfigValue<String> VILLAGER_PROFESSION;
+	public static final ModConfigSpec.BooleanValue ENABLE_WANDERER_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_WANDERER_LOCKPICK_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_WANDERER_LOCK_TRADES;
+	public static final ModConfigSpec.BooleanValue ENABLE_WANDERER_MECHANISM_TRADES;
 
 	// Compatibility — Carry On
-	public static final ForgeConfigSpec.BooleanValue CARRYON_ENABLE;
-	public static final ForgeConfigSpec.BooleanValue CARRYON_ALLOW_LOCKED;
-	public static final ForgeConfigSpec.BooleanValue CARRYON_REQUIRE_AUTH;
-	public static final ForgeConfigSpec.BooleanValue CARRYON_DENY_PARTIAL_MULTIBLOCK;
-	public static final ForgeConfigSpec.BooleanValue CARRYON_LOG_TRANSFERS;
+	public static final ModConfigSpec.BooleanValue CARRYON_ENABLE;
+	public static final ModConfigSpec.BooleanValue CARRYON_ALLOW_LOCKED;
+	public static final ModConfigSpec.BooleanValue CARRYON_REQUIRE_AUTH;
+	public static final ModConfigSpec.BooleanValue CARRYON_DENY_PARTIAL_MULTIBLOCK;
+	public static final ModConfigSpec.BooleanValue CARRYON_LOG_TRANSFERS;
 
 	public static Pattern[] lockableBlocks;
 	public static List<TagKey<Block>> lockableTags;
@@ -103,7 +103,7 @@ public class LocksServerConfig
 
 	static
 	{
-		ForgeConfigSpec.Builder cfg = new ForgeConfigSpec.Builder();
+		ModConfigSpec.Builder cfg = new ModConfigSpec.Builder();
 
 		MAX_LOCKABLE_VOLUME = cfg
 			.comment("Maximum amount of blocks that can be locked at once")
@@ -127,12 +127,12 @@ public class LocksServerConfig
 		STEEL_MATERIAL_MODE = cfg
 			.comment("Controls whether Locks provides (and generates) its own native steel material.",
 				"Locks ships steel_ingot, steel_nugget, steel_ore and deepslate_steel_ore so its steel locks are",
-				"always craftable, and merges them into the standard Forge steel tags (forge:ingots/steel,",
-				"forge:nuggets/steel, forge:ores/steel). The native blocks/items are ALWAYS registered so old worlds",
+				"always craftable, and merges them into the standard common steel tags (c:ingots/steel,",
+				"c:nuggets/steel, c:ores/steel). The native blocks/items are ALWAYS registered so old worlds",
 				"and existing stacks stay valid — this setting only controls acquisition (recipes, ore generation,",
 				"creative-tab presentation).",
 				"  AUTO          - default. For each form (ingot/nugget/ore), provide Locks' native version only when",
-				"                  no OTHER mod already supplies it via the Forge steel tags (Locks' own entries are",
+				"                  no OTHER mod already supplies it via the common steel tags (Locks' own entries are",
 				"                  ignored when detecting external steel). Native ore only generates when no foreign",
 				"                  steel ore exists and the native ingot is active.",
 				"  FORCE_NATIVE  - always enable Locks' native steel recipes and ore generation, even alongside an",
@@ -393,7 +393,7 @@ public class LocksServerConfig
 		for(TagKey<Block> tag : lockableTags)
 			if(state.is(tag))
 				return true;
-		String name = ForgeRegistries.BLOCKS.getKey(state.getBlock()).toString();
+		String name = BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
 		for(Pattern p : lockableBlocks)
 			if(p.matcher(name).matches())
 				return true;

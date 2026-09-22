@@ -40,8 +40,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.ChatFormatting;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 
 public class LockItem extends LockingItem
 {
@@ -104,7 +104,7 @@ public class LockItem extends LockingItem
 		BlockPos pos = ctx.getClickedPos();
 		if (!LocksServerConfig.canLock(world, pos))
 			return InteractionResult.PASS;
-		ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(world);
 		if(handler == null)
 			return InteractionResult.PASS;
 		Int2ObjectMap<Lockable> chunkLkbs = handler.getInChunk(pos);
@@ -117,7 +117,7 @@ public class LockItem extends LockingItem
 	{
 		Player player = ctx.getPlayer();
 		BlockPos pos = ctx.getClickedPos();
-		ISelection select = player.getCapability(LocksCapabilities.SELECTION).orElse(null);
+		ISelection select = LocksCapabilities.getSelection(player);
 		if (select == null)
 			return InteractionResult.PASS;
 		BlockPos pos1 = select.get();
@@ -138,7 +138,7 @@ public class LockItem extends LockingItem
 			if (LocksServerConfig.ENABLE_AWARENESS.get()
 				&& LocksEnchantments.level(LocksEnchantments.AWARENESS, lockStack) > 0)
 				setOwner(lockStack, player.getUUID());
-			ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+			ILockableHandler handler = LocksCapabilities.getHandler(world);
 			if (handler == null)
 				return InteractionResult.PASS;
 			Lockable lockable = new Lockable(new Cuboid6i(pos1, pos), Lock.from(stack), Transform.fromDirection(ctx.getClickedFace(), player.getDirection().getOpposite()), lockStack, world);
@@ -186,7 +186,7 @@ public class LockItem extends LockingItem
 		if (LocksServerConfig.ENABLE_AWARENESS.get()
 			&& LocksEnchantments.level(LocksEnchantments.AWARENESS, lockStack) > 0)
 			setOwner(lockStack, player.getUUID());
-		ILockableHandler handler = world.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+		ILockableHandler handler = LocksCapabilities.getHandler(world);
 		if (handler == null)
 			return InteractionResult.PASS;
 		Lockable lockable = new Lockable(new Cuboid6i(pos, pos1), Lock.from(stack), Transform.fromDirection(ctx.getClickedFace(), player.getDirection().getOpposite()), lockStack, world);

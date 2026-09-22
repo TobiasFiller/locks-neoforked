@@ -7,15 +7,15 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.bus.api.IEventBus;
 
 public final class LocksCreativeTabs
 {
 	public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(Registries.CREATIVE_MODE_TAB, Locks.ID);
 
-	public static final RegistryObject<CreativeModeTab> LOCKS_TAB = TABS.register("locks",
+	public static final DeferredHolder<CreativeModeTab, CreativeModeTab> LOCKS_TAB = TABS.register("locks",
 		() -> CreativeModeTab.builder()
 			.title(Component.translatable("itemGroup.locks"))
 			.icon(() -> new ItemStack(LocksItems.IRON_LOCK.get()))
@@ -65,8 +65,8 @@ public final class LocksCreativeTabs
 
 	private LocksCreativeTabs() {}
 
-	public static void register()
+	public static void register(IEventBus modBus)
 	{
-		TABS.register(FMLJavaModLoadingContext.get().getModEventBus());
+		TABS.register(modBus);
 	}
 }

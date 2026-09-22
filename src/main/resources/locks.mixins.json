@@ -5,9 +5,6 @@
 	"refmap": "locks.refmap.json",
 	"mixins":
 	[
-		"AbstractFurnaceBlockEntityMixin",
-		"BaseContainerBlockEntityMixin",
-		"ChestBlockEntityMixin",
 		"ChestBlockMixin",
 		"ChunkMapMixin",
 		"DoorBlockMixin",

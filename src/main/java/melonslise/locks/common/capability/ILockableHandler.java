@@ -8,7 +8,7 @@ import melonslise.locks.common.util.Lockable;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.common.util.INBTSerializable;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 
 public interface ILockableHandler extends INBTSerializable<IntTag>, Observer
 {

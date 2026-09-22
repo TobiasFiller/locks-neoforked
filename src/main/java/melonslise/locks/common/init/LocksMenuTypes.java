@@ -1,30 +1,30 @@
 package melonslise.locks.common.init;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import melonslise.locks.Locks;
 import melonslise.locks.common.container.KeyRingContainer;
 import melonslise.locks.common.container.LockPickingContainer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
-import net.minecraftforge.common.extensions.IForgeMenuType;
-import net.minecraftforge.registries.RegistryObject;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
+import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class LocksMenuTypes
 {
-	public static final DeferredRegister<MenuType<?>> MENU_TYPES = DeferredRegister.create(ForgeRegistries.MENU_TYPES, Locks.ID);
+	public static final DeferredRegister<MenuType<?>> MENU_TYPES = DeferredRegister.create(BuiltInRegistries.MENU, Locks.ID);
 
-	public static final RegistryObject<MenuType<LockPickingContainer>>
-		LOCK_PICKING = MENU_TYPES.register("lock_picking", () -> IForgeMenuType.create(LockPickingContainer.FACTORY));
+	public static final DeferredHolder<MenuType<?>, MenuType<LockPickingContainer>>
+		LOCK_PICKING = MENU_TYPES.register("lock_picking", () -> IMenuTypeExtension.create(LockPickingContainer.FACTORY));
 
-	public static final RegistryObject<MenuType<KeyRingContainer>>
-		KEY_RING = MENU_TYPES.register("key_ring", () -> IForgeMenuType.create(KeyRingContainer.FACTORY));
+	public static final DeferredHolder<MenuType<?>, MenuType<KeyRingContainer>>
+		KEY_RING = MENU_TYPES.register("key_ring", () -> IMenuTypeExtension.create(KeyRingContainer.FACTORY));
 
 	private LocksMenuTypes() {}
 
-	public static void register()
+	public static void register(IEventBus modBus)
 	{
-		MENU_TYPES.register(FMLJavaModLoadingContext.get().getModEventBus());
+		MENU_TYPES.register(modBus);
 	}
 }

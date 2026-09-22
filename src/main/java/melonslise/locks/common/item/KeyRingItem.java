@@ -1,8 +1,7 @@
 package melonslise.locks.common.item;
 
-import melonslise.locks.common.capability.CapabilityProvider;
-import melonslise.locks.common.capability.KeyRingInventory;
 import melonslise.locks.common.container.KeyRingContainer;
+import melonslise.locks.common.init.LocksCapabilities;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Item;
@@ -11,10 +10,7 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.common.extensions.IForgeServerPlayer;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandler;
 
 import java.util.OptionalInt;
 
@@ -28,15 +24,9 @@ public class KeyRingItem extends Item
 		this.rows = rows;
 	}
 
-	@Override
-	public ICapabilityProvider getCapabilityProvider(ItemStack stack)
-	{
-		return new CapabilityProvider(ForgeCapabilities.ITEM_HANDLER, new KeyRingInventory(stack, this.rows, 9));
-	}
-
 	public static boolean containsId(ItemStack stack, int id)
 	{
-		IItemHandler inv = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).orElse(null);
+		IItemHandler inv = LocksCapabilities.getItemHandler(stack);
 		if(inv == null)
 			return false;
 		for(int a = 0; a < inv.getSlots(); ++a)
@@ -53,7 +43,7 @@ public class KeyRingItem extends Item
 	{
 		ItemStack stack = player.getItemInHand(hand);
 		if(!player.level().isClientSide)
-			((IForgeServerPlayer) (ServerPlayer) player).openMenu(new KeyRingContainer.Provider(stack), new KeyRingContainer.Writer(hand));
+			((ServerPlayer) player).openMenu(new KeyRingContainer.Provider(stack), new KeyRingContainer.Writer(hand));
 		return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);
 	}
 

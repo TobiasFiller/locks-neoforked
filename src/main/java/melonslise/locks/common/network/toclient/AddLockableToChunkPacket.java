@@ -1,19 +1,28 @@
 package melonslise.locks.common.network.toclient;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import melonslise.locks.Locks;
 import melonslise.locks.common.capability.ILockableHandler;
+import melonslise.locks.common.capability.ILockableStorage;
 import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.util.Lockable;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraftforge.event.network.CustomPayloadEvent;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public class AddLockableToChunkPacket
+public class AddLockableToChunkPacket implements CustomPacketPayload
 {
+	public static final Type<AddLockableToChunkPacket> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Locks.ID, "add_lockable_to_chunk"));
+	public static final StreamCodec<RegistryFriendlyByteBuf, AddLockableToChunkPacket> STREAM_CODEC = StreamCodec.of((buf, pkt) -> encode(pkt, buf), AddLockableToChunkPacket::decode);
+
 	private final Lockable lockable;
 	private final int x, z;
 
@@ -46,7 +55,13 @@ public class AddLockableToChunkPacket
 		buf.writeInt(pkt.z);
 	}
 
-	public static void handle(AddLockableToChunkPacket pkt, CustomPayloadEvent.Context ctx)
+	@Override
+	public Type<? extends CustomPacketPayload> type()
+	{
+		return TYPE;
+	}
+
+	public static void handle(AddLockableToChunkPacket pkt, IPayloadContext ctx)
 	{
 		// Use runnable, lambda causes issues with class loading
 		ctx.enqueueWork(new Runnable()
@@ -57,7 +72,7 @@ public class AddLockableToChunkPacket
 				Minecraft mc = Minecraft.getInstance();
 				if(mc.level == null)
 					return;
-				ILockableHandler handler = mc.level.getCapability(LocksCapabilities.LOCKABLE_HANDLER).orElse(null);
+				ILockableHandler handler = LocksCapabilities.getHandler(mc.level);
 				if(handler == null)
 					return;
 				// The world handler is the client's authoritative render source, so always register here.
@@ -76,9 +91,11 @@ public class AddLockableToChunkPacket
 				// chunk (mc.level.getChunk(x, z) would create one, corrupting the client chunk lifecycle).
 				ChunkAccess ca = mc.level.getChunk(pkt.x, pkt.z, ChunkStatus.FULL, false);
 				if(ca instanceof LevelChunk ch)
-					ch.getCapability(LocksCapabilities.LOCKABLE_STORAGE).ifPresent(st -> st.add(lkb));
+				{
+					ILockableStorage st = LocksCapabilities.getStorage(ch);
+					if(st != null) st.add(lkb);
+				}
 			}
 		});
-		ctx.setPacketHandled(true);
 	}
 }

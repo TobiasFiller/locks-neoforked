@@ -16,7 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 public class PistonBlockMixin
 {
 	// Before getPistonPushReaction call
-	@Inject(at = @At(value = "INVOKE", target = "net/minecraft/world/level/block/state/BlockState.getPistonPushReaction()Lnet/minecraft/world/level/material/PushReaction;", ordinal = 0), method = "isPushable(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;ZLnet/minecraft/core/Direction;)Z", cancellable = true)
+	@Inject(at = @At(value = "INVOKE", target = "net/minecraft/world/level/block/state/BlockState.getPistonPushReaction()Lnet/minecraft/world/level/material/PushReaction;", ordinal = 0), method = "isPushable(Lnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/Direction;ZLnet/minecraft/core/Direction;)Z", cancellable = true, remap = false)
 	private static void isPushable(BlockState state, Level world, BlockPos pos, Direction dir, boolean flag, Direction dir1, CallbackInfoReturnable<Boolean> cir)
 	{
 		if(LocksUtil.locked(world, pos))
