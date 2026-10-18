@@ -1,12 +1,5 @@
 {
 	"type": "minecraft:crafting_shaped",
-	"conditions":
-	[
-		{
-			"type": "locks:steel",
-			"query": "steel_available"
-		}
-	],
 	"pattern":
 	[
 		" D ",
@@ -21,7 +14,7 @@
 		},
 		"L":
 		{
-			"item": "locks:steel_lock_mechanism"
+			"item": "locks:iron_lock_mechanism"
 		}
 	},
 	"result":

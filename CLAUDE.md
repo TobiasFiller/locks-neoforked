@@ -3,7 +3,7 @@
 ## Quick Reference
 - **Mod ID**: `locks`
 - **Package**: `melonslise.locks` (original author's package, NOT com.otectus)
-- **Version**: 1.7.5
+- **Version**: 1.8.0 (set in `gradle.properties` as `mod_version`; `neoforge.mods.toml` pulls it via `${mod_version}`)
 - **MC**: 1.21.1 | **Forge**: 52.1.2 | **Java**: 21
 - **Mappings**: Official
 - **License**: CC BY-NC 3.0 (Attribution-NonCommercial)
@@ -43,6 +43,28 @@ This mod was ported from 1.16.5 and now targets Minecraft 1.21.1 / Forge 52.x. K
 - `source-1.16.5/` — original source for comparison
 
 ## Conventions
+
+### Git workflow (hard rules)
+- **Every file in the working tree uses CRLF line endings.** Java, JSON, Markdown, TOML — all of it.
+  `.gitattributes` has `* text=auto` and `core.autocrlf=true`, so Git normalizes to LF on commit and checks
+  out CRLF on Windows. That only works if the file on disk actually contains CRLF: tools that write files
+  directly (scripted edits, `Set-Content`, Python `write_text`) can silently produce LF-only files and trigger
+  `LF will be replaced by CRLF the next time Git touches it`. After writing a file this way, normalize it:
+  ```powershell
+  $p = (Resolve-Path <file>).Path
+  $c = [System.IO.File]::ReadAllText($p) -replace "`r`n","`n" -replace "`n","`r`n"
+  [System.IO.File]::WriteAllText($p, $c)
+  ```
+  `[System.IO.File]::WriteAllText` is safe on both PowerShell 5.1 and 7 — it writes UTF-8 **without** a BOM
+  (verified), so it does not corrupt files that must stay BOM-less. The `write`/`edit` tools are preferable for
+  targeted edits since they preserve the file's existing line endings on their own.
+- **`git add` every newly created file immediately**, in the same turn it is created. New files are untracked
+  and will otherwise be missed when committing. This applies to new sources, resources, docs and scripts alike.
+- `git rm` deletions are fine (they stage themselves); regular edits need `git add` before commit.
+- Do not `git stash` on the user's behalf — if a stash is created, it must be popped or dropped in the same
+  session, and a clean pop leaves no `refs/stash` reflog, so the stashed work becomes unrecoverable.
+
+### Code conventions
 - Registration: DeferredRegister on MOD bus
 - Capabilities: AttachCapabilitiesEvent for lock storage on chunks/levels
 - Mixins: `src/main/resources/locks.mixins.json` is the only manifest the build packages — add new mixins there.

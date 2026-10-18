@@ -21,6 +21,7 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
 import net.minecraft.util.RandomSource;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
@@ -32,6 +33,7 @@ public final class LocksConfig
 	public static final ModConfigSpec.DoubleValue GENERATION_ENCHANT_CHANCE;
 	public static final ModConfigSpec.ConfigValue<List<? extends String>> GENERATED_LOCKS;
 	public static final ModConfigSpec.ConfigValue<List<? extends Integer>> GENERATED_LOCK_WEIGHTS;
+	public static final ModConfigSpec.ConfigValue<List<? extends Double>> LOCK_TIER_CHANCES;
 	public static final ModConfigSpec.BooleanValue RANDOMIZE_LOADED_LOCKS;
 
 	// Lock stat overrides (sentinel -1 = use JSON default)
@@ -60,7 +62,7 @@ public final class LocksConfig
 
 	// Rebuilt by init(), which now also runs on every tag load (a /reload can change BIOME_GATED_LOCKS), so these
 	// are read by worldgen threads while the server thread may be replacing them. volatile + immutable TreeMaps
-	// gives safe publication, matching the snapshot pattern in NativeSteelPolicy.
+	// gives safe publication.
 	public static volatile NavigableMap<Integer, Item> weightedGeneratedLocks;
 	public static volatile int weightTotal;
 	public static volatile NavigableMap<Double, Item> lootValueTierMap;
@@ -76,10 +78,44 @@ public final class LocksConfig
 	public static volatile NavigableMap<Double, Item> ungatedLootValueTierMap;
 
 	/**
+	 * Generation tables with steel-gated locks stripped out — used while {@code c:ingots/steel} is empty. The
+	 * ungated variants additionally strip biome-gated locks. Same reasoning as the ungated tables: a lock that may
+	 * not appear should neither appear nor steal weight from the rest.
+	 */
+	public static volatile int noSteelWeightTotal;
+	public static volatile NavigableMap<Integer, Item> noSteelWeightedGeneratedLocks;
+	public static volatile NavigableMap<Double, Item> noSteelLootValueTierMap;
+	public static volatile int noSteelUngatedWeightTotal;
+	public static volatile NavigableMap<Integer, Item> noSteelUngatedWeightedGeneratedLocks;
+	public static volatile NavigableMap<Double, Item> noSteelUngatedLootValueTierMap;
+
+	/**
 	 * Set of items in {@link LocksItemTags#BIOME_GATED_LOCKS}, snapshotted on every tag load because a datapack
 	 * reload can change it independently of the config.
 	 */
 	private static volatile Set<Item> biomeGatedLocks = Set.of();
+
+	/**
+	 * Set of items in {@link LocksItemTags#STEEL_PROVIDER_LOCKS}, snapshotted on every tag load for the same
+	 * reason.
+	 */
+	private static volatile Set<Item> steelProviderLocks = Set.of();
+
+	/**
+	 * Whether any mod populates {@code c:ingots/steel}. Decides whether {@link #steelProviderLocks} may be
+	 * generated at all. This is a hard gate that outranks the config: a stale {@code locks-common.toml} written by
+	 * an older version still lists {@code locks:steel_lock}, and changing the default alone would never remove it.
+	 */
+	private static volatile boolean steelAvailable = false;
+
+	/**
+	 * Per-tier keep-chance from {@link #LOCK_TIER_CHANCES}, keyed by lock item so the parallel config lists stay
+	 * positional. Rebuilt in {@link #init()}.
+	 */
+	private static volatile Map<Item, Double> tierChances = Map.of();
+
+	/** Guards the "configured steel lock, but no steel provider" warning so it is logged once per session, not per tag reload. */
+	private static final java.util.concurrent.atomic.AtomicBoolean warnedAboutMissingSteel = new java.util.concurrent.atomic.AtomicBoolean();
 
 	static
 	{
@@ -97,11 +133,30 @@ public final class LocksConfig
 			.comment("Chance to randomly enchant a generated lock during world generation. Set to 0 to disable")
 			.defineInRange("Generation Enchant Chance", 0.4d, 0d, 1d);
 		GENERATED_LOCKS = cfg
-			.comment("Items that can be generated as locks (must be instance of LockItem in code!)")
-			.defineList("Generated Locks", Lists.newArrayList("locks:wood_lock", "locks:copper_lock", "locks:iron_lock", "locks:steel_lock", "locks:gold_lock", "locks:diamond_lock", "locks:netherite_lock"), e -> e instanceof String);
+			.comment("Items that can be generated as locks (must be instance of LockItem in code!)",
+				"NOTE: 'locks:steel_lock' is deliberately NOT in this default list. The steel lock is not part of the",
+				"natural progression (it needs a steel provider from another mod), so it never spawns on a generated",
+				"chest. Add it here explicitly if you want it to.")
+			.defineList("Generated Locks", Lists.newArrayList("locks:wood_lock", "locks:copper_lock", "locks:iron_lock", "locks:gold_lock", "locks:diamond_lock", "locks:netherite_lock"), e -> e instanceof String);
 		GENERATED_LOCK_WEIGHTS= cfg
 			.comment("WARNING: THE AMOUNT OF NUMBERS SHOULD BE EQUAL TO THE AMOUNT OF GENERATED LOCK ITEMS!!!", "The relative probability that the corresponding lock item will be generated on a chest. Higher number = higher chance to generate")
-			.defineList("Generated Lock Chances", Lists.newArrayList(3, 3, 3, 2, 2, 1, 1), e -> e instanceof Integer);
+			.defineList("Generated Lock Chances", Lists.newArrayList(3, 3, 3, 2, 1, 1), e -> e instanceof Integer);
+		LOCK_TIER_CHANCES = cfg
+			.comment("Chance (0.0-1.0) that a chest keeps the highest tier its loot value qualifies for, one value per",
+				"entry in 'Generated Locks' (same order). Only used by loot-scaled generation; the weighted 'Generated",
+				"Lock Chances' list is the fallback when loot scaling is off or the loot value is unknown.",
+				"On a failed roll the chest drops to the next tier down and rolls again, so a value that qualifies for",
+				"diamond is not guaranteed to get one — the tier is merely POSSIBLE. Richer chests still skew high,",
+				"because a chest only ever rolls tiers it actually qualifies for.",
+				"A value of 1.0 makes that tier certain once reached; 0.0 removes it from the roll entirely.",
+				"Netherite is deliberately NOT 1.0: it is the End's signature reward and still the most likely roll",
+				"there, but an end city chest should be able to come up with any tier, not just netherite.",
+				"Defaults: wood=1.0, copper=0.85, iron=0.7, gold=0.55, diamond=0.35, netherite=0.5.",
+				"Resulting spread: a very rich overworld chest (diamond is the top eligible tier) comes out diamond 35%,",
+				"gold 36%, iron 20%, copper 7%, wood 1%; a median chest is iron 70% / copper 25% / wood 5%; a village",
+				"chest is always wood; an end city chest (worth 22.2) is netherite 50%, diamond 18%, gold 18%, iron",
+				"10%, copper 4%, wood 1%.")
+			.defineList("Lock Tier Chances", Lists.newArrayList(1.0, 0.85, 0.7, 0.55, 0.35, 0.5), e -> e instanceof Double);
 		RANDOMIZE_LOADED_LOCKS = cfg
 			.comment("Randomize lock IDs and combinations when loading them from a structure file. Randomization works just like during world generation")
 			.define("Randomize Loaded Locks", false);
@@ -205,12 +260,23 @@ public final class LocksConfig
 				"WARNING: THE AMOUNT OF NUMBERS SHOULD BE EQUAL TO THE AMOUNT OF GENERATED LOCK ITEMS!!!",
 				"A chest's total loot value is compared against these thresholds and it receives the highest tier it qualifies for.",
 				"If the value is below the lowest threshold, NO lock is generated for that chest.",
-				"Defaults: wood=3, copper=6, iron=10, steel=16, gold=24, diamond=40, netherite=60.",
+				"NOTE: these defaults were placed against the measured loot-value distribution of vanilla 1.21.1",
+				"(56 chest tables: min 0.0, p25 4.9, median 9.8, p75 15.9, p90 22.2, max 50.4). Re-space these against",
+				"your own pack's economy when you add or remove a tier.",
+				"The netherite value MUST stay at or below ~22: 'chests/end_city_treasure' (22.2) is the only",
+				"End chest table, and the netherite lock is End-gated, so a higher threshold makes the netherite",
+				"lock impossible to generate anywhere.",
+				"The diamond value is the Overworld's effective TOP tier: a chest that would have earned netherite",
+				"falls back to diamond outside the End, so EVERY chest worth at least the diamond value gets a",
+				"diamond lock in the Overworld. Lowering it is what made diamond locks far too common; 20 leaves only",
+				"the genuinely rich tables (ruined portal, desert pyramid, shipwreck, ancient city, bastion, buried",
+				"treasure) while dungeons and mineshafts drop to gold.",
+				"Defaults: wood=2, copper=5, iron=9, gold=13, diamond=20, netherite=21.",
 				"Example - make diamond (or better) locks exclusive to high-value chests: raise the diamond/netherite",
-				"thresholds (e.g. 80 and 140) so only the richest loot tables reach them, and raise the lowest threshold",
+				"thresholds (e.g. 25 and 35) so only the richest loot tables reach them, and raise the lowest threshold",
 				"to skip locks on poor chests. With [10, 20, 35, 50, 65, 80, 140] a chest worth 90 gets diamond and one",
 				"worth 150 gets netherite, while a chest worth 8 gets no lock at all.")
-			.defineList("Loot Value Tiers", Lists.newArrayList(3.0, 6.0, 10.0, 16.0, 24.0, 40.0, 60.0), e -> e instanceof Double);
+			.defineList("Loot Value Tiers", Lists.newArrayList(2.0, 5.0, 9.0, 13.0, 20.0, 21.0), e -> e instanceof Double);
 		ITEM_VALUE_OVERRIDES = cfg
 			.comment("Override the base value for specific items. Format: 'modid:item_name=value'.",
 				"Items not listed here use the Default Item Value.",
@@ -246,10 +312,25 @@ public final class LocksConfig
 		weightTotal = 0;
 		ungatedWeightedGeneratedLocks = new TreeMap<>();
 		ungatedWeightTotal = 0;
+		noSteelWeightedGeneratedLocks = new TreeMap<>();
+		noSteelWeightTotal = 0;
+		noSteelUngatedWeightedGeneratedLocks = new TreeMap<>();
+		noSteelUngatedWeightTotal = 0;
 		List<? extends String> locks = GENERATED_LOCKS.get();
 		List<? extends Integer> weights = GENERATED_LOCK_WEIGHTS.get();
+		List<? extends Double> chances = LOCK_TIER_CHANCES.get();
+		if (chances.size() != locks.size())
+			Locks.LOGGER.warn("Lock Tier Chances list size ({}) doesn't match Generated Locks list size ({}). Missing entries default to a certain tier.", chances.size(), locks.size());
+		Map<Item, Double> parsedChances = new HashMap<>();
+		for (int a = 0; a < Math.min(locks.size(), chances.size()); ++a)
+		{
+			double chance = Math.clamp(chances.get(a), 0.0, 1.0);
+			parsedChances.put(BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a))), chance);
+		}
+		tierChances = Map.copyOf(parsedChances);
 		if (weights.size() != locks.size())
 			Locks.LOGGER.warn("Generated Lock Chances list size ({}) doesn't match Generated Locks list size ({}). Some locks may not appear.", weights.size(), locks.size());
+		int blockedSteelLocks = 0;
 		for(int a = 0; a < Math.min(locks.size(), weights.size()); ++a)
 		{
 			Item lock = BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a)));
@@ -260,11 +341,32 @@ public final class LocksConfig
 				ungatedWeightTotal += weights.get(a);
 				ungatedWeightedGeneratedLocks.put(ungatedWeightTotal, lock);
 			}
+			// Hard gate: a steel-provider lock never reaches a chest while c:ingots/steel is empty, whatever the
+			// config says. A locks-common.toml written before the steel rework still lists locks:steel_lock.
+			if (isSteelGated(lock))
+			{
+				if (!steelAvailable)
+					blockedSteelLocks++;
+				continue;
+			}
+			noSteelWeightTotal += weights.get(a);
+			noSteelWeightedGeneratedLocks.put(noSteelWeightTotal, lock);
+			if(!biomeGatedLocks.contains(lock))
+			{
+				noSteelUngatedWeightTotal += weights.get(a);
+				noSteelUngatedWeightedGeneratedLocks.put(noSteelUngatedWeightTotal, lock);
+			}
 		}
+		// Warned once per session: init() re-runs on every config load and every tag reload, and a server admin only needs
+		// to be told once that a configured steel lock is currently being skipped.
+		if (blockedSteelLocks > 0 && warnedAboutMissingSteel.compareAndSet(false, true))
+			Locks.LOGGER.warn("{} lock(s) in 'Generated Locks' need a steel provider, but c:ingots/steel is empty — they are excluded from chest generation for now.", blockedSteelLocks);
 
 		// Build loot value tier map
 		lootValueTierMap = new TreeMap<>();
 		ungatedLootValueTierMap = new TreeMap<>();
+		noSteelLootValueTierMap = new TreeMap<>();
+		noSteelUngatedLootValueTierMap = new TreeMap<>();
 		List<? extends Double> tiers = LOOT_VALUE_TIERS.get();
 		if (tiers.size() != locks.size())
 			Locks.LOGGER.warn("Loot Value Tiers list size ({}) doesn't match Generated Locks list size ({}). Some lock tiers may be unreachable.", tiers.size(), locks.size());
@@ -274,6 +376,12 @@ public final class LocksConfig
 			lootValueTierMap.put(tiers.get(a), lock);
 			if(!biomeGatedLocks.contains(lock))
 				ungatedLootValueTierMap.put(tiers.get(a), lock);
+			if(!isSteelGated(lock))
+			{
+				noSteelLootValueTierMap.put(tiers.get(a), lock);
+				if(!biomeGatedLocks.contains(lock))
+					noSteelUngatedLootValueTierMap.put(tiers.get(a), lock);
+			}
 		}
 
 		// Parse item value overrides
@@ -305,13 +413,15 @@ public final class LocksConfig
 	}
 
 	/**
-	 * Snapshots {@link LocksItemTags#BIOME_GATED_LOCKS} so the generation tables can be built with the gated locks
-	 * stripped out. Called on every tag load — a datapack reload changes the tag without touching the config, so
-	 * the tables have to be rebuilt from {@link #init()} whenever it does.
+	 * Snapshots the tags the generation tables are built from — {@link LocksItemTags#BIOME_GATED_LOCKS},
+	 * {@link LocksItemTags#STEEL_PROVIDER_LOCKS} and whether {@code c:ingots/steel} has any member at all. Called
+	 * on every tag load: a datapack reload changes all three without touching the config, so the tables have to be
+	 * rebuilt from {@link #init()} whenever it does.
 	 */
-	public static void refreshBiomeGatedLocks(RegistryAccess registryAccess)
+	public static void refreshGenerationTags(RegistryAccess registryAccess)
 	{
-		biomeGatedLocks = registryAccess.registry(Registries.ITEM)
+		var itemRegistry = registryAccess.registry(Registries.ITEM);
+		biomeGatedLocks = itemRegistry
 			.flatMap(registry -> registry.getTag(LocksItemTags.BIOME_GATED_LOCKS))
 			.map(holderSet -> {
 				Set<Item> gated = new HashSet<>();
@@ -320,6 +430,19 @@ public final class LocksConfig
 				return Set.copyOf(gated);
 			})
 			.orElse(Set.of());
+		steelProviderLocks = itemRegistry
+			.flatMap(registry -> registry.getTag(LocksItemTags.STEEL_PROVIDER_LOCKS))
+			.map(holderSet -> {
+				Set<Item> gated = new HashSet<>();
+				for (var holder : holderSet)
+					gated.add(holder.value());
+				return Set.copyOf(gated);
+			})
+			.orElse(Set.of());
+		steelAvailable = itemRegistry
+			.flatMap(registry -> registry.getTag(ItemTags.create(ResourceLocation.fromNamespaceAndPath("c", "ingots/steel"))))
+			.map(holderSet -> holderSet.size() > 0)
+			.orElse(false);
 		if (SPEC.isLoaded())
 			init();
 	}
@@ -331,12 +454,28 @@ public final class LocksConfig
 	}
 
 	/**
+	 * True if this lock needs a steel provider. Locks in {@link LocksItemTags#STEEL_PROVIDER_LOCKS} are never
+	 * generated while {@code c:ingots/steel} is empty.
+	 */
+	public static boolean isSteelGated(Item item)
+	{
+		return steelProviderLocks.contains(item);
+	}
+
+	/**
 	 * Returns a lock ItemStack based on the total loot value, or {@link ItemStack#EMPTY} if the value
 	 * is below all thresholds (meaning no lock should be generated for this chest).
 	 */
 	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng)
 	{
 		return getLockForLootValue(lootValue, rng, true);
+	}
+
+	/** The configured keep-chance for this tier; certain if the list is too short or holds a stale entry. */
+	private static double tierChance(Item lock)
+	{
+		Double chance = tierChances.get(lock);
+		return chance == null ? 1.0 : chance;
 	}
 
 	/**
@@ -346,14 +485,23 @@ public final class LocksConfig
 	 */
 	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng, boolean biomeGatedAllowed)
 	{
-		NavigableMap<Double, Item> tiers = biomeGatedAllowed ? lootValueTierMap : ungatedLootValueTierMap;
+		NavigableMap<Double, Item> tiers = !steelAvailable
+			? (biomeGatedAllowed ? noSteelLootValueTierMap : noSteelUngatedLootValueTierMap)
+			: (biomeGatedAllowed ? lootValueTierMap : ungatedLootValueTierMap);
+		// Start at the highest tier the chest qualifies for, then step down on a failed roll. A chest that reaches
+		// diamond therefore gets "diamond is possible" rather than "diamond, guaranteed": the strict highest-fit rule
+		// made every chest above a threshold come out identical, so one busy band pushed everything above it into the
+		// same tier. Richer chests still skew high, because a chest only ever rolls tiers it actually qualifies for.
 		var entry = tiers.floorEntry(lootValue);
-		if (entry == null)
-			return ItemStack.EMPTY;
-		ItemStack stack = new ItemStack(entry.getValue());
-		if (stack.isEmpty())
-			return ItemStack.EMPTY;
-		return stack;
+		while (entry != null)
+		{
+			Item lock = entry.getValue();
+			double chance = tierChance(lock);
+			if (chance >= 1.0 || LocksUtil.chance(rng, chance))
+				return new ItemStack(lock);
+			entry = tiers.lowerEntry(entry.getKey());
+		}
+		return ItemStack.EMPTY;
 	}
 
 	public static ItemStack getRandomLock(RandomSource rng)
@@ -367,8 +515,12 @@ public final class LocksConfig
 	 */
 	public static ItemStack getRandomLock(RandomSource rng, boolean biomeGatedAllowed)
 	{
-		NavigableMap<Integer, Item> table = biomeGatedAllowed ? weightedGeneratedLocks : ungatedWeightedGeneratedLocks;
-		int total = biomeGatedAllowed ? weightTotal : ungatedWeightTotal;
+		NavigableMap<Integer, Item> table = !steelAvailable
+			? (biomeGatedAllowed ? noSteelWeightedGeneratedLocks : noSteelUngatedWeightedGeneratedLocks)
+			: (biomeGatedAllowed ? weightedGeneratedLocks : ungatedWeightedGeneratedLocks);
+		int total = !steelAvailable
+			? (biomeGatedAllowed ? noSteelWeightTotal : noSteelUngatedWeightTotal)
+			: (biomeGatedAllowed ? weightTotal : ungatedWeightTotal);
 		if (total <= 0 || table.isEmpty())
 			return ItemStack.EMPTY;
 		var entry = table.ceilingEntry(rng.nextInt(total) + 1);

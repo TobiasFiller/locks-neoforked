@@ -1,10 +1,22 @@
 {
 	"type": "minecraft:crafting_shaped",
-	"conditions":
+	"neoforge:conditions":
 	[
 		{
-			"type": "locks:steel",
-			"query": "steel_available"
+			"type": "neoforge:not",
+			"value":
+			{
+				"type": "neoforge:tag_empty",
+				"tag": "c:ingots/steel"
+			}
+		},
+		{
+			"type": "neoforge:not",
+			"value":
+			{
+				"type": "neoforge:tag_empty",
+				"tag": "c:nuggets/steel"
+			}
 		}
 	],
 	"pattern":

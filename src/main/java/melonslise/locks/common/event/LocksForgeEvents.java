@@ -29,9 +29,6 @@ import melonslise.locks.common.network.toclient.AddLockableToChunkPacket;
 import melonslise.locks.common.init.LocksTagHelper;
 import melonslise.locks.common.init.LockStatsReloadListener;
 import melonslise.locks.common.init.LocksSoundEvents;
-import melonslise.locks.common.steel.NativeSteelPolicy;
-import melonslise.locks.common.steel.NativeSteelState;
-import melonslise.locks.common.steel.SteelMaterialMode;
 import melonslise.locks.common.item.KeyRingItem;
 import melonslise.locks.common.item.LockItem;
 import melonslise.locks.common.item.LockPickItem;
@@ -175,44 +172,16 @@ public final class LocksForgeEvents
 	public static void onServerStopped(ServerStoppedEvent e)
 	{
 		LootValueCalculator.clearCache();
-		// Drop the steel snapshot so a stale state never leaks into the next world/server session.
-		NativeSteelPolicy.clear();
 	}
 
 	/**
-	 * Refresh the native-steel compatibility snapshot whenever tags are (re)loaded, and log a single diagnostic
-	 * summary. Only the authoritative server-data load recomputes the snapshot and logs; the client packet update
-	 * refreshes the snapshot too (so the client-side creative tab reflects the server), but never logs.
+	 * Snapshot the biome-gated and steel-gated lock tags and rebuild the generation tables around them whenever
+	 * tags are (re)loaded.
 	 */
 	@SubscribeEvent
 	public static void onTagsUpdated(TagsUpdatedEvent e)
 	{
-		SteelMaterialMode mode = LocksServerConfig.SPEC.isLoaded()
-			? LocksServerConfig.STEEL_MATERIAL_MODE.get()
-			: SteelMaterialMode.AUTO;
-		NativeSteelState state = NativeSteelPolicy.refresh(e.getRegistryAccess(), mode);
-
-		// Snapshot the biome-gated lock tag and rebuild the generation tables around it. Has to happen before the
-		// early return below, since a /reload changes the tag without touching the config.
-		LocksConfig.refreshBiomeGatedLocks(e.getRegistryAccess());
-
-		if (e.getUpdateCause() != TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD)
-			return;
-
-		Locks.LOGGER.info("Steel material mode: {}", mode);
-		Locks.LOGGER.info("Foreign ingots: {}", state.foreignIngots());
-		Locks.LOGGER.info("Foreign nuggets: {}", state.foreignNuggets());
-		Locks.LOGGER.info("Foreign ores: {}", state.foreignOres());
-		Locks.LOGGER.info("Locks native fallback: ingot={}, nugget={}, oreGeneration={}",
-			state.nativeIngotActive(), state.nativeNuggetActive(), state.nativeOreActive());
-
-		if (mode == SteelMaterialMode.EXTERNAL_ONLY)
-		{
-			List<String> missing = NativeSteelPolicy.missingForms(state);
-			if (!missing.isEmpty())
-				Locks.LOGGER.warn("Steel Material Mode is EXTERNAL_ONLY but no steel provider supplies: {}. "
-					+ "Affected Locks recipes will be uncraftable until a mod/datapack populates the forge steel tags.", missing);
-		}
+		LocksConfig.refreshGenerationTags(e.getRegistryAccess());
 	}
 
 	private static final Gson LOOT_GSON = new Gson();
@@ -286,8 +255,8 @@ public final class LocksForgeEvents
 		if(mechs) trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.IRON_LOCK_MECHANISM.get()), 5, 1, 8, 10, 0.2f));
 		if(locks) trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.IRON_LOCK.get()), 6, 1, 8, 10, 0.2f));
 
-		trades = levels.get(4);
-		if(picks) trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.STEEL_LOCK_PICK.get()), 4, 2, 16, 20, 0.05f));
+		// NOTE: no steel tier here on purpose. The steel pick/mechanism need a steel provider from another
+		// mod and must be craftable only, so they are never handed out by a villager.
 
 		trades = levels.get(5);
 		if(picks)
@@ -295,7 +264,6 @@ public final class LocksForgeEvents
 			trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.DIAMOND_LOCK_PICK.get()), 8, 2, 12, 30, 0.05f));
 			trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.NETHERITE_LOCK_PICK.get()), 16, 1, 6, 30, 0.05f));
 		}
-		if(mechs) trades.add(new VillagerTrades.ItemsForEmeralds(new ItemStack(LocksItems.STEEL_LOCK_MECHANISM.get()), 8, 1, 8, 30, 0.2f));
 	}
 
 	@SubscribeEvent
@@ -305,22 +273,17 @@ public final class LocksForgeEvents
 			return;
 		boolean picks = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_LOCKPICK_TRADES, true);
 		boolean locks = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_LOCK_TRADES, true);
-		boolean mechs = serverConfigBool(LocksServerConfig.ENABLE_WANDERER_MECHANISM_TRADES, true);
 		List<ItemListing> generic = e.getGenericTrades();
 		List<ItemListing> rare = e.getRareTrades();
+		// NOTE: the steel pick/lock/mechanism are deliberately absent. They need a steel provider from
+		// another mod and must be craftable only, so a wandering trader never sells them.
 		if(picks)
-		{
 			generic.add(new VillagerTrades.ItemsForEmeralds(LocksItems.GOLD_LOCK_PICK.get(), 5, 2, 6, 1));
-			generic.add(new VillagerTrades.ItemsForEmeralds(LocksItems.STEEL_LOCK_PICK.get(), 3, 2, 8, 1));
-		}
 		if(locks)
 		{
-			generic.add(new VillagerTrades.EnchantedItemForEmeralds(LocksItems.STEEL_LOCK.get(), 16, 4, 1));
 			rare.add(new VillagerTrades.EnchantedItemForEmeralds(LocksItems.DIAMOND_LOCK.get(), 28, 4, 1));
 			rare.add(new VillagerTrades.EnchantedItemForEmeralds(LocksItems.NETHERITE_LOCK.get(), 40, 4, 1));
 		}
-		if(mechs)
-			rare.add(new VillagerTrades.ItemsForEmeralds(LocksItems.STEEL_LOCK_MECHANISM.get(), 6, 1, 4, 1));
 	}
 
 	// Single registration trigger for ALL chunk loads (disk + freshly generated). The chunk capability NBT

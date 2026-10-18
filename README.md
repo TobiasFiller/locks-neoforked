@@ -37,20 +37,16 @@ All lock and lock pick types are defined via JSON files, making it easy to add c
 | **Keys** | Key Blank, Key, Master Key, Key Ring |
 | **Lock Picks** | Wood, Bobby Pin (copper), Iron, Steel, Gold, Diamond, Netherite (+ custom) |
 | **Components** | Spring, Wood/Copper/Iron/Steel Lock Mechanisms |
-| **Materials** | Steel Ingot, Steel Nugget, Steel Ore, Deepslate Steel Ore (native fallback; populate `c:ingots/steel` / `c:nuggets/steel` / `c:ores/steel`) |
 
-> **Steel — native fallback that defers to your modpack.** Locks Reforged ships its own steel material so the steel tier is fully craftable in a locks-only install: blast an iron ingot or smelt steel ore into a Steel Ingot, plus ingot↔nugget conversions. Native Steel Ore generates uncommonly underground in ordinary Overworld biomes.
+> **Steel comes from your modpack.** Locks Reforged does not ship a steel material. Every steel recipe uses the standard **`c:ingots/steel`** / **`c:nuggets/steel`** tags, so steel from Create, Immersive Engineering, Mekanism, Thermal, … works interchangeably.
 >
-> Because the material lives in the standard **`c:ingots/steel`, `c:nuggets/steel`, `c:ores/steel`** tags, steel from other mods (Create, Immersive Engineering, Mekanism, Thermal, …) works interchangeably in every Locks recipe. When your pack already has a steel economy, Locks **detects it and steps aside** — it stops generating its ore and stops offering redundant steel-production recipes, letting the other mod (or a unification mod) own steel. Detection inspects the *members* of the steel tags and ignores Locks' own entries, so its ingot never masks a real external provider. Each form is handled independently: a mod that adds steel ingots but no nuggets still gets Locks' nugget as a missing-form fallback.
+> **The steel tier is craft-only.** Without a steel provider the recipes are not loaded at all — no broken recipes, no missing-ingredient placeholders — and with one, the steel lock, lock pick and steel mechanism can be **only** crafted, never found. They appear in no chest loot table, no villager trade and no wandering-trader trade, and the steel lock is absent from the default **Generated Locks** / **Loot Value Tiers** lists so it never spawns on a generated chest either.
 >
-> **The native blocks and items stay registered under stable IDs in every mode** — existing worlds and stacks always remain valid; only *acquisition* (ore generation, production recipes, creative-tab presentation) is toggled. Disabled native steel is still obtainable via `/give` for recovery.
+> **The steel lock stands outside the progression.** It does not gate anything else: the gold and diamond locks are crafted with the **iron** mechanism, never the steel one.
 >
-> **`Steel Material Mode`** (server config) overrides the automatic behavior:
-> - `AUTO` *(default)* — provide each native form only when no other mod supplies it; generate native ore only when no foreign steel ore exists.
-> - `FORCE_NATIVE` — keep Locks' native steel recipes and ore generation on even alongside an external provider.
-> - `EXTERNAL_ONLY` — never enable native acquisition or generation, even if the steel tags are empty (a warning names any missing form).
+> **A steel lock can never appear on a chest without a steel provider.** This is enforced in code, not just by the default config: `locks:steel_lock` is in the item tag **`locks:steel_provider_locks`**, and while `c:ingots/steel` is empty those locks are stripped out of both generation tables — even if a `locks-common.toml` written by an older Locks version still lists them. The config comment on `Generated Locks` is therefore only a convenience; a stale config cannot put the steel lock back into your world. An empty `c:ingots/steel` is logged once at data load, along with a warning naming any steel-gated lock that was skipped.
 >
-> Changing the mode may need a `/reload` (recipes) and a world reload (ore generation). Locks never hardcodes a specific mod's item — everything keys off the common tags. **Modpack authors:** if your chosen steel mod does *not* register its steel into `c:ingots/steel` / `c:nuggets/steel` / `c:ores/steel`, add a small datapack tag entry so Locks can see it (or set `FORCE_NATIVE` / `EXTERNAL_ONLY` to decide explicitly).
+> **Modpack authors:** if your steel mod does *not* register its steel into `c:ingots/steel` / `c:nuggets/steel`, add a small datapack tag entry so Locks can use it. Add other steel-dependent locks to `locks:steel_provider_locks` to gate them the same way.
 
 ### Keys and Key Pairing
 
@@ -130,6 +126,8 @@ Locked chests spawn naturally in structure chests across the **Overworld, the Ne
 
 ### Villager & Wandering Trader Integration
 A configurable villager profession (default toolsmith) sells lock picks and lock mechanisms, and the wandering trader offers lock picks and enchanted locks. Every category — lock picks, locks, and mechanisms — can be toggled independently in the server config, so you can disable easy lock picks while still selling locks. Villager lock sales (early-game wood/copper/iron locks) are available as an opt-in.
+
+> **No steel is ever traded.** Neither a villager nor a wandering trader sells a steel lock pick, steel lock or steel mechanism — the steel tier is craft-only, from whatever steel another mod provides. The wandering trader's *lock mechanism* trade category is therefore gone as well, since the steel mechanism was its only entry.
 
 ### Loot Table Integration
 Lock picks and lock mechanisms can be found in dungeon, temple, and other structure chests.
@@ -287,8 +285,7 @@ Creative players are exempt. To make locks aggressively punish theft, enable the
 | `Villager.Villager Profession` | `minecraft:toolsmith` | Which profession offers lock trades |
 | `Wandering Trader.Enable Wandering Trader Trades` | true | Master switch for wanderer lock trades |
 | `Wandering Trader.Enable Wandering Trader Lockpick Trades` | true | Sell lock picks |
-| `Wandering Trader.Enable Wandering Trader Lock Trades` | true | Sell enchanted steel/diamond/netherite locks |
-| `Wandering Trader.Enable Wandering Trader Lock Mechanism Trades` | true | Sell lock mechanisms |
+| `Wandering Trader.Enable Wandering Trader Lock Trades` | true | Sell enchanted diamond/netherite locks |
 
 **To disable lock pick sales while keeping locks purchasable** (lock picks are powerful; locks help early-game chest protection): set `Enable Villager Lockpick Trades = false` and `Enable Villager Lock Trades = true` (and similarly `Enable Wandering Trader Lockpick Trades = false` while keeping `Enable Wandering Trader Lock Trades = true`). All default trades are unchanged when the config is left at defaults.
 
@@ -296,16 +293,42 @@ Creative players are exempt. To make locks aggressively punish theft, enable the
 
 Loot-scaled lock generation reserves the best locks for the best chests. The **Loot Value Tiers** list (in `locks-common.toml`) holds one minimum value per entry in **Generated Locks** (same order). A chest receives the highest tier whose threshold its loot value meets; below the lowest threshold it gets no lock.
 
-To make **diamond or better appear only on high-value chests**, raise the upper thresholds and the floor. With the default seven locks (`wood, copper, iron, steel, gold, diamond, netherite`):
+To make **diamond or better appear only on high-value chests**, raise the upper thresholds and the floor. With the default six locks (`wood, copper, iron, gold, diamond, netherite` — the steel lock is deliberately not part of world generation):
 
 ```toml
 [Loot-Scaled Locks]
     Enable Loot-Scaled Locks = true
-    #                   wood  copper iron  steel gold  diamond netherite
-    Loot Value Tiers = [10.0, 20.0,  35.0, 50.0, 65.0, 90.0,   150.0]
+    #                   wood  copper iron  gold  diamond netherite
+    Loot Value Tiers = [10.0, 20.0,  35.0, 65.0, 90.0,   150.0]
 ```
 
-Now a chest worth ~95 gets a **diamond** lock, one worth ~160 gets **netherite**, ordinary chests get wood→gold, and chests worth under 10 get **no lock**. Tune `Default Item Value`, the rarity multipliers, and `Item Value Overrides` to change how loot value is scored.
+The shipped defaults are `2, 5, 9, 13, 20, 21`, placed against vanilla 1.21.1's measured chest-loot distribution (`min 0.0, p25 4.9, median 9.8, p75 15.9, p90 22.2, max 50.4`). These live in **`config/locks-common.toml`** under `["Loot-Scaled Locks"]` as `"Loot Value Tiers"`, in the same order as **Generated Locks** — edit that file (with the game closed) to change them; the number in the source is only the default written on first start. Note that deleting a tier shifts the question of where the thresholds go: simply dropping a value would widen the band below it, and a too-wide band swallows most chests (removing steel without shifting left iron covering everything worth 10–24, i.e. nearly every structure chest). Re-space them when you remove a tier.
+
+> **The diamond value is the Overworld's effective top tier.** A chest that would have earned a netherite lock falls back to diamond outside the End, so *every* chest worth at least the diamond value is a candidate for one.
+
+### Tier chances — a qualifying tier is possible, not guaranteed
+
+Reaching a tier does not hand it to you. A chest starts at the highest tier its loot value qualifies for, rolls **`Lock Tier Chances`** (also in `locks-common.toml`, one value per entry in `Generated Locks`), and on a failed roll steps down to the next tier and rolls again. Richer chests still skew high, because a chest only ever rolls tiers it actually qualifies for.
+
+Defaults `1.0, 0.85, 0.7, 0.55, 0.35, 0.5` (wood→netherite), which produce:
+
+| Chest | Outcome |
+|---|---|
+| Village (4.5) | wood 100% |
+| Median (9.8) | iron 70%, copper 25%, wood 5% |
+| p75 (15.9) | gold 55%, iron 32%, copper 12%, wood 2% |
+| Ancient City (29.4, Overworld) | diamond 35%, gold 36%, iron 20%, copper 7%, wood 1% |
+| End City (22.2) | netherite 50%, diamond 18%, gold 18%, iron 10%, copper 4%, wood 1% |
+
+Set a tier to `1.0` to make it certain once reached, or `0.0` to drop it from the roll entirely. Without this, every chest above a threshold came out as the exact same tier.
+
+> **Netherite is deliberately not 1.0.** It stays the most likely roll in the End — it is the reason to go there — but an end city chest can come up with any tier, not just netherite. Raise it toward `1.0` if you want the End to feel like a guaranteed jackpot.
+
+**Tune them against your pack's economy, not guesswork.** The shipped values were placed against vanilla 1.21.1's measured chest-loot distribution (56 tables: `min 0.0, p25 4.9, median 9.8, p75 15.9, p90 22.2, max 50.4`). A modpack that inflates item values pushes every chest up the ladder, so re-space them if you also touch `Default Item Value`, the rarity multipliers or `Item Value Overrides`.
+
+With the shipped defaults a village chest (worth ~4.5) always gets **wood**, a chest near the median (~9.8) lands on **iron** 70% of the time, an abandoned mineshaft or simple dungeon (~19.1) on **gold**, and in the Overworld only the genuinely rich tables — ancient city, bastion, buried treasure, shipwreck — reach **diamond**, and only 35% of the time. Trial chamber rewards (worth under 2) get **no lock** at all. Tune `Default Item Value`, the rarity multipliers, and `Item Value Overrides` to change how loot value is scored.
+
+> **The netherite value must stay at or below ~22.** `chests/end_city_treasure` (worth 22.2) is the *only* End chest table in the game, and the netherite lock is End-gated. Any higher threshold makes the netherite lock impossible to generate anywhere, not merely rare.
 
 Remember that the netherite tier is additionally **End-only** — a threshold of 150 only ever produces a netherite lock in the End; elsewhere that chest falls back to diamond. See [World Generation](#world-generation).
 

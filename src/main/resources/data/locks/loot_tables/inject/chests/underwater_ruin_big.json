@@ -14,23 +14,6 @@
 			[
 				{
 					"type": "minecraft:item",
-					"name": "locks:steel_lock_pick",
-					"weight": 1,
-					"functions":
-					[
-						{
-							"function": "minecraft:set_count",
-							"count":
-							{
-								"min": 1.0,
-								"max": 2.0,
-								"type": "minecraft:uniform"
-							}
-						}
-					]
-				},
-				{
-					"type": "minecraft:item",
 					"name": "locks:gold_lock_pick",
 					"weight": 3,
 					"functions":
@@ -72,24 +55,8 @@
 			[
 				{
 					"type": "minecraft:item",
-					"name": "locks:steel_lock_mechanism",
-					"weight": 4
-				},
-				{
-					"type": "minecraft:item",
 					"name": "locks:diamond_lock",
 					"weight": 1,
-					"functions":
-					[
-						{
-							"function": "minecraft:enchant_randomly"
-						}
-					]
-				},
-				{
-					"type": "minecraft:item",
-					"name": "locks:steel_lock",
-					"weight": 2,
 					"functions":
 					[
 						{

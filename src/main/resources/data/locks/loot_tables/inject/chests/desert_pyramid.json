@@ -28,28 +28,6 @@
 							}
 						}
 					]
-				},
-				{
-					"type": "minecraft:item",
-					"name": "locks:steel_lock_pick",
-					"weight": 15,
-					"functions":
-					[
-						{
-							"function": "minecraft:set_count",
-							"count":
-							{
-								"min": 2.0,
-								"max": 4.0,
-								"type": "minecraft:uniform"
-							}
-						}
-					]
-				},
-				{
-					"type": "minecraft:item",
-					"name": "locks:steel_lock_mechanism",
-					"weight": 10
 				}
 			]
 		},

@@ -27,6 +27,7 @@ Attach locks to **any block** — not just chests. Doors, trapdoors, furnaces, d
 - **Enchantability** — How likely the lock is to receive powerful enchantments.
 - **Resistance** — Explosion resistance. Diamond and Netherite locks are virtually indestructible.
 - **Pick Wear** — Durability this lock takes off a lock pick on every wrong pin. Higher = eats picks faster.
+- **The steel lock is an outsider.** It is the only tier that depends on another mod for its material, so it gates nothing else — the Gold and Diamond Plated locks are built on the **iron** mechanism — and it is not among the tiers that spawn on generated chests. Treat it as a modpack-flavoured tier rather than a step in the ladder.
 
 ### Seven Tiers of Lock Picks (+ Custom!)
 
@@ -131,13 +132,17 @@ Two independent reasons a chest can end up bare: its loot value falls below the 
 - Tiers follow the chest's loot value, with the **netherite lock reserved for the End** (see [Seven Tiers of Locks](#seven-tiers-of-locks-custom) for the full rule)
 - Lock picks, keys and mechanisms are injected into chest loot tables (configurable by pattern, `minecraft:chests/` by default)
 - Villagers of a configurable profession (toolsmith by default) sell lock picks and lock mechanisms — and, as an opt-in, early-game wood/copper/iron locks
-- Wandering traders offer gold and steel picks, enchanted steel locks, and rare enchanted diamond and netherite locks
+- Wandering traders offer gold picks, plus rare enchanted diamond and netherite locks (never steel — see below)
 - Every trade category can be toggled independently, so you can stop selling picks while still selling locks
 
-### Native Steel — self-sufficient, but defers to your modpack
-Locks Reforged ships its own steel so the steel tier is fully craftable with no other mod: **Steel Ingot**, **Steel Nugget**, and **Steel Ore** / **Deepslate Steel Ore** (uncommon Overworld generation; smelt or blast into ingots). Everything lives in the standard `c:ingots/steel`, `c:nuggets/steel`, and `c:ores/steel` tags, so steel from Create, Immersive Engineering, Mekanism, Thermal, etc. works in every Locks recipe.
+### Steel — brought by your pack, not by Locks
+Locks Reforged ships **no steel material of its own**: no ingot, no nugget, no ore, no ore generation. Every steel recipe draws from the standard `c:ingots/steel` and `c:nuggets/steel` tags, so steel from Create, Immersive Engineering, Mekanism, Thermal, etc. works in every Locks recipe — and your pack's steel economy stays entirely yours.
 
-When your pack already has a steel economy, Locks **detects it and steps aside** — it stops generating its ore and offering redundant steel-production recipes (its own tag entries are ignored during detection, so its ingot never masks a real provider). Each form is independent: a mod with steel ingots but no nuggets still gets Locks' nugget as a fallback. The native blocks/items always stay registered (existing worlds and stacks stay valid; disabled steel is still `/give`-able) — only *acquisition* is toggled. A server-config **`Steel Material Mode`** (`AUTO` / `FORCE_NATIVE` / `EXTERNAL_ONLY`) overrides the automatic behavior.
+**Without a steel provider the steel tier simply does not exist.** The steel lock, steel lock pick and steel lock mechanism are gated behind the steel tags, so in a vanilla-only pack their recipes are not loaded at all — no uncraftable placeholders in the recipe book.
+
+**And nothing else depends on it.** The Gold and Diamond Plated locks use the **iron** mechanism, so the whole rest of the progression — wood, copper, iron, gold, diamond, netherite — stays fully craftable with zero steel in the pack.
+
+**The steel tier is craft-only.** You cannot find it: no chest loot table lists a steel lock, pick or mechanism, no villager or wandering trader sells one, and the steel lock is left out of the default chest-generation lists, so it does not appear on generated chests either. If another mod gives you steel ingots, you craft the steel tier yourself; otherwise the recipes simply do not exist.
 
 ### Mod Compatibility
 - **Curios** *(optional)* — the Key Ring works from a curio slot without occupying your hand.
@@ -249,7 +254,7 @@ When multiple systems provide values for the same stat, the order of precedence 
 
 ### A Note on Mechanisms
 
-Lock mechanisms (Wood, Copper, Iron, Steel) are basic crafting components — they are not data-driven and cannot be added via config or datapack. Each lock recipe requires its corresponding mechanism as the center ingredient.
+Lock mechanisms (Wood, Copper, Iron, Steel) are basic crafting components — they are not data-driven and cannot be added via config or datapack. Each lock recipe requires a mechanism as the center ingredient: the Wood and Copper locks use their own, Iron and Steel use theirs, and the Gold and Diamond Plated locks build on the **iron** mechanism (the Netherite lock is smithed from the Diamond one).
 
 ---
 
@@ -272,14 +277,13 @@ All settings are customizable via config files. Note that `locks-server.toml` is
 - **Allow Removing Locks** — Whether unlocked locks can be removed by sneaking (default: true)
 - **Protect Lockables** — Whether locked blocks are break-proof in survival (default: true)
 - **Easy Lock** — One-click lock placement (default: true)
-- **Steel Material Mode** — `AUTO` / `FORCE_NATIVE` / `EXTERNAL_ONLY` (default: `AUTO`)
 - **Display** — Hide Lock ID, Hide HUD Enchantments, Hide HUD Tooltip (all default: false)
 - **Enchantments** — Individually enable or disable each of the 12 enchantments (7 lock-side + 5 lock-pick-side). The **Lock Pick** subsection tunes `Finesse Wear Reduction Per Level` (0.15), `Attunement Strength Per Level` (0.10), `Sturdy Wear Per Level` (0.5), `Near Miss Wear Multiplier` (0.33), `Grounded Reduction Per Level` (0.20), `Last Catch Save Chance` (0.20), and `Quiet Hand Volume` (0.25)
 - **Enchantments.Shocking** — Damage formula (`Base` 0.0 + level × `Per Level` 1.5, clamped to `Max Damage` 1024.0), a cooldown, whether the enchantment is required at all, and four independent triggers: on pick break (default: true), on wrong pin, on unauthorized interaction, and on block break attempt (default: false). Creative players are exempt
 - **Netherite Lockpick Unbreakable** — When enabled, netherite lock picks never break (default: false)
 - **Allow Itemless Lock Picking** — Let an empty main hand play the lock picking minigame with no lock pick (default: false)
 - **Loot Table Injection Patterns** — Which loot tables receive lock pick / key injection (default: `minecraft:chests/`)
-- **Trades** — Master and per-category switches for villager and wandering trader sales, plus `Villager Profession` (default: `minecraft:toolsmith`). Villager *lock* sales are opt-in (default: false); every other category defaults to on
+- **Trades** — Master and per-category switches for villager and wandering trader sales, plus `Villager Profession` (default: `minecraft:toolsmith`). Villager *lock* sales are opt-in (default: false); every other category defaults to on. No trade category covers steel — the steel tier is never sold
 - **Compatibility.CarryOn** — Whether Carry On integration is active, whether locked blocks may be carried, whether carrying one requires authorization, whether partial multi-block pickups are denied, and transfer logging
 
 **`config/locks-client.toml`** — Client-side settings

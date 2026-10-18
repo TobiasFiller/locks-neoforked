@@ -4,7 +4,7 @@
 
 1. **Refmap warning in dev**: `locks.mixins.json` declares `"refmap": "locks.refmap.json"`, and Mixin logs `Reference map 'locks.refmap.json' for locks.mixins.json could not be read`. The annotation processor does not emit the file and it is **not** in the production JAR either — this warning is therefore expected in both dev and production. It is harmless, not dev-only: NeoForge 1.21.1 resolves mixin targets against the same official (Mojang) names the code is compiled with, so no remapping layer is required and the mixins apply directly (confirmed by locked chests generating correctly). Cosmetic only; no fix needed.
 
-2. **Worldgen datapack folder is NeoForge-specific**: `locks:lock_chests` and `locks:steel_ore` are wired in through `data/locks/neoforge/biome_modifier/*.json`. Note the layout — `neoforge` is a folder **inside** the `locks` namespace, not the namespace itself. NeoForge resolves these via `listResources("neoforge/biome_modifier")`, which internally builds `<namespace>/<path>`; a file at `data/neoforge/biome_modifier/` parses fine but is never listed, so the feature is silently never invoked. There is no error, no log line and no crash — the registry just comes up empty. Worth remembering before adding more worldgen JSON, since a misplaced file is completely silent.
+2. **Worldgen datapack folder is NeoForge-specific**: `locks:lock_chests` is wired in through `data/locks/neoforge/biome_modifier/*.json`. Note the layout — `neoforge` is a folder **inside** the `locks` namespace, not the namespace itself. NeoForge resolves these via `listResources("neoforge/biome_modifier")`, which internally builds `<namespace>/<path>`; a file at `data/neoforge/biome_modifier/` parses fine but is never listed, so the feature is silently never invoked. There is no error, no log line and no crash — the registry just comes up empty. Worth remembering before adding more worldgen JSON, since a misplaced file is completely silent.
 
 3. **Vanilla has no `add_features` in 1.21.1**: the biome modifier type is `neoforge:add_features` with fields `biomes` / `features` / `step`. Vanilla's `minecraft:add_features` only exists from 1.21.2 onwards, so a datapack copied from a newer version fails to parse here.
 
@@ -221,15 +221,17 @@ None of the following has been executed. Run before release and tick individuall
 - [x] All new translation keys present; `data/locks/recipes/key.json` still points at `locks:crafting_key`
 - [x] No client-only class loaded by the dedicated server (server log clean of `NoClassDefFoundError` / `net.minecraft.client`; the only client references in common code remain the pre-existing ones inside `@OnlyIn(Dist.CLIENT)` methods)
 
-## Native Steel Fallback (new in 1.7.1)
+## Steel is external (rewritten in 1.8.0)
 
-Locks ships its own steel material (`steel_ingot`, `steel_nugget`, `steel_ore`, `deepslate_steel_ore`) and merges it into the standard `c:ingots/steel` / `c:nuggets/steel` / `c:ores/steel` tags, but **prefers a modpack's own steel** when one exists.
+The native steel material — `steel_ingot`, `steel_nugget`, `steel_ore`, `deepslate_steel_ore`, its ore generation and the whole `common/steel` detection policy — has been **removed**. Locks no longer ships, generates or produces any steel; the steel tier is whatever your pack's steel mod provides.
 
-**How it works:** one detection service — `common/steel/NativeSteelPolicy` — inspects the *members* of the Forge steel tags, filters out Locks' own IDs (so its ingot never masks a real external provider), and decides per material form whether the native version is active. A custom recipe condition (`locks:steel`, registered via `CraftingHelper` in `FMLCommonSetupEvent`) gates the native-producing recipes; a custom placement modifier (`locks:steel_ore`) gates ore generation from a cached, thread-safe policy snapshot refreshed on `TagsUpdatedEvent`. The native blocks/items are **always registered** (existing worlds/stacks stay valid) — only acquisition is toggled. Server config `Steel Material Mode` (`AUTO` / `FORCE_NATIVE` / `EXTERNAL_ONLY`) overrides the automatic behavior.
+**How it works now:** nothing. The steel recipes (`steel_lock`, `steel_lock_mechanism`, `steel_lock_pick`) draw from the standard `c:ingots/steel` / `c:nuggets/steel` tags and carry a stock `neoforge:not` + `neoforge:tag_empty` condition. If no mod populates `c:ingots/steel`, those recipes are never loaded — the steel tier is simply absent rather than showing up as an uncraftable recipe with a missing ingredient.
 
-**Detection & fallback rules (AUTO):** native ingot ⇔ no foreign ingot; native nugget ⇔ no foreign nugget; native ore gen ⇔ no foreign ore **and** native ingot active. Each form is independent (e.g. a mod with ingots but no nuggets still gets Locks' nugget).
+**The steel tier gates nothing, and is craft-only.** `gold_lock` and `diamond_lock` use `locks:iron_lock_mechanism` as their only mechanism ingredient (the old `gold_lock_from_iron` / `diamond_lock_from_iron` fallback pair is gone — the steel-based variant no longer exists), so the rest of the progression never needs steel. The steel lock is absent from the default `Generated Locks` / `Loot Value Tiers` config lists, is hard-gated at generation time by the `locks:steel_provider_locks` item tag, has been stripped from every bundled chest injection in `loot_tables/inject/chests/`, and is not sold by any villager or wandering trader. The wandering trader's *Enable Wandering Trader Lock Mechanism Trades* config option was removed with its only entry, the steel mechanism.
 
-**Verified:** `./gradlew test` (9 new pure-logic policy tests + 16 existing, all pass), `compileJava` / `build` / `runData` clean, JAR contains all blockstates/models/textures/loot/tags/recipes/features/biome-modifier/lang. Dedicated-server boot **alone** logs `ingot=true, nugget=true, oreGeneration=true` with no foreign steel; **with a datapack adding vanilla iron to the three steel tags** it correctly reports the foreign IDs and flips all native fallbacks off — no recipe/worldgen errors either way. Remaining in-game checks (visual ore render/gen, live mode-switch in JEI) are in the Still Needs Testing list below.
+**Modpack authors:** if your steel mod does not tag its steel into `c:ingots/steel` / `c:nuggets/steel`, add a datapack tag entry — Locks hardcodes no specific mod's item.
+
+**Migration note for existing worlds:** placed `locks:steel_ore` / `locks:deepslate_steel_ore` blocks and existing `locks:steel_ingot` / `locks:steel_nugget` stacks from a ≤1.7.x save become unknown entries. If you relied on them, add a datapack (or a small shim mod) restoring those IDs and their tag membership.
 
 ## Lock Pick Enchantments (new in 1.7.0)
 
@@ -324,14 +326,43 @@ Manual QA (needs a world with Locks + Carry On; not runnable in the headless bui
 - [x] Config files created with correct defaults
 - [x] Creative tab registered
 
+### Config defaults are not a guarantee
+
+The steel lock kept spawning on chests after it had been removed from the `Generated Locks` / `Loot Value Tiers` **defaults**, because `run/client/config/locks-common.toml` still held the seven-entry list written by an older build. NeoForge only fills in keys that are *missing*; it never rewrites stored values, so changing a default silently does nothing for anyone who has already run the mod (renaming a key is the only thing that forces the new value — see the `Chest Lock Chance` note in 1.8.0).
+
+Anything that must hold regardless of an existing config has to be enforced in code. Here that means the `locks:steel_provider_locks` item tag: while `c:ingots/steel` is empty, every lock in that tag is stripped from the weighted and loot-scaled generation tables. **When testing a default change, delete the local config first** — otherwise the new default is not being tested at all.
+
+### Deleting a loot-value tier needs re-spacing, not just removal
+
+Removing `16.0` (steel) while leaving gold at `24.0` widened iron's band from `[10, 16)` to `[10, 24)`. Nearly every structure chest is worth 10–24, so the whole game turned into iron locks. The thresholds are cumulative `floorEntry` lookups, not per-tier widths — removing a value silently hands its whole range to the tier below it. Re-space the list whenever a tier is dropped.
+
+The shipped `2, 5, 9, 13, 17, 21` was set against the **measured** vanilla 1.21.1 distribution (`min=0.0, p25=4.9, median=9.8, p75=15.9, p90=22.2, max=50.4` over 56 chest tables), after the blind `14/19/26` guess also failed to produce netherite locks in playtesting. The earlier `24/40` top tiers sat above p90 and made the netherite lock mathematically unreachable — see the next note. Still to confirm by hand: that the real spawn distribution across a sample of chests matches the intent.
+
+### The netherite lock's threshold is bounded by the End, not by the Overworld
+
+`chests/end_city_treasure` (22.2) is the only End chest table in vanilla, and `locks:netherite_lock` is in `locks:biome_gated_locks` / End-only. The two constraints combine into a hard ceiling: **the netherite tier must sit at or below ~22**, or the lock cannot be generated anywhere at all — not "rarely", never. Any future re-spacing of `Loot Value Tiers`, any change to `Item Value Overrides`, or any mod adding a cheaper end city table moves that bound. Check the distribution log before raising it.
+
+### Diamond is the Overworld's real top tier, so its threshold behaves inverted
+
+Outside the End a chest that would have earned a netherite lock falls back to the next-best tier rather than being left bare (deliberate, so a rich chest never goes lockless). That makes **diamond the effective top tier in the Overworld**, which means *every* chest worth at least the diamond value receives one. Lowering the diamond value therefore makes diamond locks **more** common, not less — the opposite of the intuition that a lower bar means fewer chests. At `17` roughly a quarter of all chests qualified (`p75` is 15.9), which is what playtesting reported.
+
+This also caps the tuning range: diamond must stay below netherite, and netherite cannot exceed ~22, so **diamond can never usefully go above ~20**. Making diamond rarer in the Overworld than that would require changing the End-gate fallback itself (dropping the lock instead of stepping down a tier), which is a design change, not a number change.
+
+### The tier walk must terminate
+
+`getLockForLootValue` walks down the sorted tier map, rolling `Lock Tier Chances` at each step, and returns `EMPTY` if it runs off the bottom. Two properties keep that safe: the walk always moves strictly down (`lowerEntry`), so it cannot loop, and if the lowest tier is configured at `0.0` the chest ends up with **no lock at all** rather than falling back — which is arguably the more honest outcome but is a real behaviour change from the old "always the best fit" rule. The shipped default leaves wood at `1.0`, so a chest that qualifies for anything always gets a lock.
+
 ### Still Needs Testing
+- [ ] Steel gate in practice — with `c:ingots/steel` empty, a generated chest must never roll `locks:steel_lock` in either loot-scaled or weighted mode, and the "no steel provider" info line plus the skipped-lock warning must appear once at data load. Re-test with a datapack that adds a steel ingot to `c:ingots/steel` and confirm the steel lock becomes generatable again (and that a stale seven-entry `locks-common.toml` no longer matters)
+- [ ] Tier spread after the threshold re-spacing — `2, 5, 9, 13, 20, 21` is measured against the distribution log but has not been confirmed in world. It must produce wood, copper, iron, gold, diamond **and** netherite across a sample of structure chests; `[3, 6, 10, 24, 40, 60]` put essentially every chest on iron, `3, 6, 10, 16, 24, 40` never produced a netherite lock at all. Confirm an end city chest now gets a netherite lock and that no Overworld chest ever can, now that the steel-less tables carry their own gated/ungated split
+- [ ] **Lock Tier Chances** — the spread quoted in the README (rich Overworld chest → diamond 35 / gold 36 / iron 20 / copper 7 / wood 1; village always wood; End City → netherite 50 / diamond 18 / gold 18 / iron 10 / copper 4 / wood 1) is arithmetic from the defaults, not observed in world. Confirm it, and confirm that a config whose lowest tier is `0.0` really does leave such chests lockless rather than falling back
 - [ ] Lock persistence across chunk unload/reload
 - [ ] Multiplayer sync when players enter lock areas (ChunkMapMixin packet fix applied in 1.3.0)
 - [ ] Structure template save/load with locks
 - [ ] Modded block compatibility (blocks without BlockEntities)
 - [ ] Loot table injection (verify lock picks/mechanisms appear in dungeon chests) — the injection path `locks:loot_tables/inject/` was never affected by the 1.21 `loot_table` rename and is unchanged in 1.8.0; still unverified in game, since a broken injection now also means loot-value estimation silently returns NaN and drops back to random tiers
 - [ ] Villager/wanderer trades (verify lock items in trade lists)
-- [ ] World generation — verified on a dedicated server for 1.8.0: `locks:lock_chests` and `locks:steel_ore` load, plains carries them at step 6 / 10, and Overworld chests receive locks. Still to confirm by hand: Nether + End chest generation, that an End City chest can roll a netherite lock, and that no Overworld chest ever can
+- [ ] World generation — verified on a dedicated server for 1.8.0: `locks:lock_chests` loads, plains carries it at step 6 / 10, and Overworld chests receive locks. Still to confirm by hand: Nether + End chest generation, that an End City chest can roll a netherite lock, and that no Overworld chest ever can
 - [ ] Lock picking minigame UI
 - [ ] Key ring container UI
 - [ ] Enchantment application on locks (7 lock-side: Shocking, Sturdy, Complexity, Silent, Auto-Pick, Reinforced, Awareness)
