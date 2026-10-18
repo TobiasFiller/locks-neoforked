@@ -1,5 +1,33 @@
 # Locks Reforged Changelog
 
+## 1.8.0
+
+### Roughly 30% of chests are now left unlocked
+
+- **Finding a locked chest should be an event, not a given.** Until now every eligible structure chest got a lock, which drained the surprise out of it and made a lock on a crate feel like scenery. The default chance is now **0.7**, so about three in ten chests stay bare.
+- Configurable as before via **`Chest Lock Chance`** in `locks-common.toml`. `1.0` locks every chest exactly as before, `0.0` turns lock generation off.
+- **Renamed from `Lock Generation Chance` to `Chest Lock Chance`.** A renamed key deliberately resets to the new default; had the key kept its name, every existing config would have silently held on to its stored `1.0` and nobody would have seen the change. Same trick the mod used when `Generation Chance` became `Lock Generation Chance` in 1.5.0.
+- The roll is independent of the tier. A chest can still come up bare because its loot value is under the lowest threshold **or** because it lost this roll — the two stack, so lowering the chance makes bare chests more common on top of the value-based ones.
+
+### Loot-value estimation actually works now
+
+- **Loot-scaled lock tiers were never being used.** The estimator looked for loot tables under `loot_tables/`, but Minecraft renamed that directory to `loot_table` (singular) in 1.21. Every lookup missed, the calculator reported **0 chest loot tables**, and `getLootValue` returned `NaN` for everything. The consequence was silent: `Enable Loot-Scaled Locks` defaults to **on**, was advertised as the headline generation mode, and did nothing at all — random weighted selection won every time without a word of warning.
+- Now reports **56 chest loot tables** on a vanilla 1.21.1 server, so the tier a chest receives genuinely follows the value of its loot table. Village chests land on wood or copper; an end city chest is in the diamond/netherite band.
+- **Fails loudly instead of silently.** An empty precompute pass now logs a warning naming the directory it searched, rather than reporting a cheerful `0` that reads like "no chest tables exist".
+- Locks' **own** loot injection (`loot_tables/inject/`) is unaffected and still works — that path is ours and keeps the original plural name. Only vanilla's renamed directory was affected.
+- Lock picks, keys and mechanisms therefore start appearing in dungeon chest loot again, as documented.
+
+### Locked chests spawn again — and the netherite lock is now an End-exclusive reward
+
+- **Locks generate again. At all.** The NeoForge port (1.7.0) silently dropped `data/locks/forge/biome_modifier/`, which is the only thing that ever wired `locks:lock_chests` into worldgen. Both feature definitions were registered and reachable, but nothing ever invoked them, so **no chest in any dimension received a lock** — Overworld, Nether, End and modded alike. The changelog for 1.5.2 claimed this had been fixed for the Nether/End; the file it was fixed in was the one that got lost, so the claim never held in this branch. Restored, and split into one entry per dimension group so the coverage is explicit rather than implied.
+- **Coverage is the Overworld, the Nether and the End**, not just the Overworld — via separate `#minecraft:is_overworld` / `is_nether` / `is_end` modifiers. Modded dimensions keep working the moment their biomes join one of those tags, or by adding a modifier of your own.
+- **The netherite lock only generates in the End.** It is the reward for surviving a run to an end city, and no Overworld, Nether or modded structure chest ever gets one. Every other tier is unaffected and still appears everywhere.
+- **Outside the End a chest is not left bare.** A chest whose loot value would qualify for netherite drops to the next-best tier (diamond) instead of receiving no lock at all, so the distribution stays smooth rather than developing a diamond-shaped hole.
+- **The same gate covers structure templates.** With *Randomize Loaded Locks* enabled, randomising a template no longer mints a netherite lock in the Overworld; if the draw is gated away entirely the template keeps its own lock instead of producing a lockless `Lockable`.
+- **Datapack-controllable, no config edit needed.** `locks:biome_gated_locks` (item tag) names the restricted locks and ships with `locks:netherite_lock`; `locks:biome_gated_lock_biomes` (biome tag) names the biomes they may appear in and ships with `#minecraft:is_end`. Clear or extend either one to move a tier into other dimensions. Both are re-read on every tag load, so a `/reload` is enough.
+- The generation tables are rebuilt from the tag on each load and are now `volatile`, since a `/reload` can swap them while worldgen threads are reading.
+- **Native Steel Ore generation restored alongside it.** `locks:steel_ore` had been orphaned by the same lost file. It is back on `#minecraft:is_overworld` / `underground_ores`, exactly as shipped in 1.7.1, and still defers to a foreign steel provider as before.
+
 ## 1.7.4
 
 ### Lock picks stack again, and only one pick in the stack wears down

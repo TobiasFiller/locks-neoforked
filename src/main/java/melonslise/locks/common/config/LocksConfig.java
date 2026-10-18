@@ -1,17 +1,22 @@
 package melonslise.locks.common.config;
 
-import net.minecraft.core.registries.BuiltInRegistries;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Set;
 import java.util.TreeMap;
 
 import com.google.common.collect.Lists;
 
 import melonslise.locks.Locks;
+import melonslise.locks.common.init.LocksItemTags;
 import melonslise.locks.common.init.LockTypeRegistry;
 import melonslise.locks.common.util.LocksUtil;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -53,19 +58,41 @@ public final class LocksConfig
 	public static final ModConfigSpec.ConfigValue<List<? extends Double>> LOOT_VALUE_TIERS;
 	public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_VALUE_OVERRIDES;
 
-	public static NavigableMap<Integer, Item> weightedGeneratedLocks;
-	public static int weightTotal;
-	public static NavigableMap<Double, Item> lootValueTierMap;
+	// Rebuilt by init(), which now also runs on every tag load (a /reload can change BIOME_GATED_LOCKS), so these
+	// are read by worldgen threads while the server thread may be replacing them. volatile + immutable TreeMaps
+	// gives safe publication, matching the snapshot pattern in NativeSteelPolicy.
+	public static volatile NavigableMap<Integer, Item> weightedGeneratedLocks;
+	public static volatile int weightTotal;
+	public static volatile NavigableMap<Double, Item> lootValueTierMap;
 	public static Map<ResourceLocation, Double> itemValueOverrides;
+
+	/**
+	 * The same two tables with every {@link LocksItemTags#BIOME_GATED_LOCKS} lock removed. Generation draws from
+	 * these whenever the chest's biome is not in {@link LocksBiomeTags#BIOME_GATED_LOCK_BIOMES}, so a gated lock
+	 * never leaks into the wrong dimension. Empty when no lock is gated.
+	 */
+	public static volatile NavigableMap<Integer, Item> ungatedWeightedGeneratedLocks;
+	public static volatile int ungatedWeightTotal;
+	public static volatile NavigableMap<Double, Item> ungatedLootValueTierMap;
+
+	/**
+	 * Set of items in {@link LocksItemTags#BIOME_GATED_LOCKS}, snapshotted on every tag load because a datapack
+	 * reload can change it independently of the config.
+	 */
+	private static volatile Set<Item> biomeGatedLocks = Set.of();
 
 	static
 	{
 		ModConfigSpec.Builder cfg = new ModConfigSpec.Builder();
 
+		// 0.7 rather than 1.0: not every chest should be locked, otherwise a lock on a crate stops being a find.
+		// Renamed from 'Lock Generation Chance' in 1.8.0 so that existing configs pick up the new default instead of
+		// keeping their stored 1.0 — a key whose default changed would otherwise silently not apply to any server
+		// that has already run the mod once.
 		GENERATION_CHANCE = cfg
-			.comment("Chance that a generated chest receives a lock. Set to 1.0 for every chest, lower to skip some.",
-				"Renamed from 'Generation Chance' in 1.5.0 to reset stale configs where the old key was marked as unused.")
-			.defineInRange("Lock Generation Chance", 1.0d, 0d, 1d);
+			.comment("Chance that a generated chest receives a lock at all. The default 0.7 leaves roughly three in",
+				"ten chests bare, so locks stay worth finding. 1.0 locks every chest; 0.0 disables lock generation.")
+			.defineInRange("Chest Lock Chance", 0.7d, 0d, 1d);
 		GENERATION_ENCHANT_CHANCE = cfg
 			.comment("Chance to randomly enchant a generated lock during world generation. Set to 0 to disable")
 			.defineInRange("Generation Enchant Chance", 0.4d, 0d, 1d);
@@ -153,7 +180,7 @@ public final class LocksConfig
 		// Loot-Scaled Locks section
 		cfg.comment("When enabled, lock tier is determined by the value of a chest's loot table contents instead of random weighted selection. Chests below the minimum value threshold get no lock at all.").push("Loot-Scaled Locks");
 		LOOT_SCALED_LOCKS = cfg
-			.comment("Enable loot-value-based lock tier selection. When disabled, the random weighted system (Generation Chance + Generated Lock Chances) is used instead")
+			.comment("Enable loot-value-based lock tier selection. When disabled, the random weighted system (Generated Locks + Generated Lock Chances) is used instead")
 			.define("Enable Loot-Scaled Locks", true);
 		DEFAULT_ITEM_VALUE = cfg
 			.comment("Base value assigned to each item before multipliers")
@@ -217,23 +244,37 @@ public final class LocksConfig
 	{
 		weightedGeneratedLocks = new TreeMap<>();
 		weightTotal = 0;
+		ungatedWeightedGeneratedLocks = new TreeMap<>();
+		ungatedWeightTotal = 0;
 		List<? extends String> locks = GENERATED_LOCKS.get();
 		List<? extends Integer> weights = GENERATED_LOCK_WEIGHTS.get();
 		if (weights.size() != locks.size())
 			Locks.LOGGER.warn("Generated Lock Chances list size ({}) doesn't match Generated Locks list size ({}). Some locks may not appear.", weights.size(), locks.size());
 		for(int a = 0; a < Math.min(locks.size(), weights.size()); ++a)
 		{
+			Item lock = BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a)));
 			weightTotal += weights.get(a);
-			weightedGeneratedLocks.put(weightTotal, BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a))));
+			weightedGeneratedLocks.put(weightTotal, lock);
+			if(!biomeGatedLocks.contains(lock))
+			{
+				ungatedWeightTotal += weights.get(a);
+				ungatedWeightedGeneratedLocks.put(ungatedWeightTotal, lock);
+			}
 		}
 
 		// Build loot value tier map
 		lootValueTierMap = new TreeMap<>();
+		ungatedLootValueTierMap = new TreeMap<>();
 		List<? extends Double> tiers = LOOT_VALUE_TIERS.get();
 		if (tiers.size() != locks.size())
 			Locks.LOGGER.warn("Loot Value Tiers list size ({}) doesn't match Generated Locks list size ({}). Some lock tiers may be unreachable.", tiers.size(), locks.size());
 		for(int a = 0; a < Math.min(locks.size(), tiers.size()); ++a)
-			lootValueTierMap.put(tiers.get(a), BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a))));
+		{
+			Item lock = BuiltInRegistries.ITEM.get(ResourceLocation.parse(locks.get(a)));
+			lootValueTierMap.put(tiers.get(a), lock);
+			if(!biomeGatedLocks.contains(lock))
+				ungatedLootValueTierMap.put(tiers.get(a), lock);
+		}
 
 		// Parse item value overrides
 		itemValueOverrides = new HashMap<>();
@@ -264,12 +305,49 @@ public final class LocksConfig
 	}
 
 	/**
+	 * Snapshots {@link LocksItemTags#BIOME_GATED_LOCKS} so the generation tables can be built with the gated locks
+	 * stripped out. Called on every tag load — a datapack reload changes the tag without touching the config, so
+	 * the tables have to be rebuilt from {@link #init()} whenever it does.
+	 */
+	public static void refreshBiomeGatedLocks(RegistryAccess registryAccess)
+	{
+		biomeGatedLocks = registryAccess.registry(Registries.ITEM)
+			.flatMap(registry -> registry.getTag(LocksItemTags.BIOME_GATED_LOCKS))
+			.map(holderSet -> {
+				Set<Item> gated = new HashSet<>();
+				for (var holder : holderSet)
+					gated.add(holder.value());
+				return Set.copyOf(gated);
+			})
+			.orElse(Set.of());
+		if (SPEC.isLoaded())
+			init();
+	}
+
+	/** True if this lock may only be generated in {@link LocksBiomeTags#BIOME_GATED_LOCK_BIOMES}. */
+	public static boolean isBiomeGated(Item item)
+	{
+		return biomeGatedLocks.contains(item);
+	}
+
+	/**
 	 * Returns a lock ItemStack based on the total loot value, or {@link ItemStack#EMPTY} if the value
 	 * is below all thresholds (meaning no lock should be generated for this chest).
 	 */
 	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng)
 	{
-		var entry = lootValueTierMap.floorEntry(lootValue);
+		return getLockForLootValue(lootValue, rng, true);
+	}
+
+	/**
+	 * @param biomeGatedAllowed whether the chest's biome is in {@link LocksBiomeTags#BIOME_GATED_LOCK_BIOMES}. When
+	 *                         false, gated locks are skipped entirely and the chest drops to the next-best tier
+	 *                         instead of falling back to no lock at all.
+	 */
+	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng, boolean biomeGatedAllowed)
+	{
+		NavigableMap<Double, Item> tiers = biomeGatedAllowed ? lootValueTierMap : ungatedLootValueTierMap;
+		var entry = tiers.floorEntry(lootValue);
 		if (entry == null)
 			return ItemStack.EMPTY;
 		ItemStack stack = new ItemStack(entry.getValue());
@@ -280,9 +358,20 @@ public final class LocksConfig
 
 	public static ItemStack getRandomLock(RandomSource rng)
 	{
-		if (weightTotal <= 0 || weightedGeneratedLocks.isEmpty())
+		return getRandomLock(rng, true);
+	}
+
+	/**
+	 * @param biomeGatedAllowed see {@link #getLockForLootValue(double, RandomSource, boolean)}. The draw is scaled to
+	 *                         the ungated weight total, so gated locks neither appear nor steal weight from the rest.
+	 */
+	public static ItemStack getRandomLock(RandomSource rng, boolean biomeGatedAllowed)
+	{
+		NavigableMap<Integer, Item> table = biomeGatedAllowed ? weightedGeneratedLocks : ungatedWeightedGeneratedLocks;
+		int total = biomeGatedAllowed ? weightTotal : ungatedWeightTotal;
+		if (total <= 0 || table.isEmpty())
 			return ItemStack.EMPTY;
-		var entry = weightedGeneratedLocks.ceilingEntry(rng.nextInt(weightTotal) + 1);
+		var entry = table.ceilingEntry(rng.nextInt(total) + 1);
 		if (entry == null)
 			return ItemStack.EMPTY;
 		ItemStack stack = new ItemStack(entry.getValue());

@@ -16,6 +16,7 @@ import melonslise.locks.common.compat.CarryOnCompat;
 import melonslise.locks.common.compat.CuriosHelper;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.config.LocksClientConfig;
+import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.container.KeyRingContainer;
 import melonslise.locks.common.container.LockPickingContainer;
@@ -191,6 +192,10 @@ public final class LocksForgeEvents
 			: SteelMaterialMode.AUTO;
 		NativeSteelState state = NativeSteelPolicy.refresh(e.getRegistryAccess(), mode);
 
+		// Snapshot the biome-gated lock tag and rebuild the generation tables around it. Has to happen before the
+		// early return below, since a /reload changes the tag without touching the config.
+		LocksConfig.refreshBiomeGatedLocks(e.getRegistryAccess());
+
 		if (e.getUpdateCause() != TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD)
 			return;
 
@@ -212,13 +217,22 @@ public final class LocksForgeEvents
 
 	private static final Gson LOOT_GSON = new Gson();
 
+	/**
+	 * Directory holding Locks' own chest-loot injections. Unrelated to the vanilla {@code loot_table} directory
+	 * (singular since 1.21) that {@link LootValueCalculator} reads — this one is ours and keeps the original plural
+	 * name from the 1.16-era mod, so it must not be "fixed" to match.
+	 */
+	private static final String LOOT_INJECT_DIR = "loot_tables/inject";
+
 	@SubscribeEvent
 	public static void onLootTableLoad(LootTableLoadEvent e)
 	{
 		ResourceLocation name = e.getName();
 		if(!LocksServerConfig.matchesLootTablePattern(name))
 			return;
-		ResourceLocation injectLoc = ResourceLocation.fromNamespaceAndPath(Locks.ID, "loot_tables/inject/" + name.getPath() + ".json");
+		// Own bundled injections, not vanilla loot tables. This path is chosen by us, so it keeps the plural
+		// "loot_tables" of the original 1.16-era mod; only *vanilla* tables moved to "loot_table" in 1.21.
+		ResourceLocation injectLoc = ResourceLocation.fromNamespaceAndPath(Locks.ID, LOOT_INJECT_DIR + "/" + name.getPath() + ".json");
 		net.minecraft.server.MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 		if(server == null)
 			return;

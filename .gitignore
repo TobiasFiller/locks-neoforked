@@ -1,4 +1,4 @@
-# Gradle
+﻿# Gradle
 build/
 .gradle/
 
@@ -14,6 +14,8 @@ logs/
 .project
 .vscode/
 *.launch
+# Eclipse compiler output
+/bin/
 
 # OS
 .DS_Store
@@ -27,3 +29,4 @@ Thumbs.db
 
 # Local dependency jars for runtime testing (not build inputs)
 /libs/
+archive/

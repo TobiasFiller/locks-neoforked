@@ -1,6 +1,6 @@
 # Locks Reforged
 
-An unofficial port of the **Locks** mod by [Melonslise](https://github.com/Melonslise) to **Minecraft Forge 1.21.1**.
+An unofficial port of the **Locks** mod by [Melonslise](https://github.com/Melonslise) to **Minecraft NeoForge 1.21.1**.
 
 > Locks is a small, but unique Minecraft mod that introduces flexible and universal locks which can be dynamically attached to multiple blocks of any kind, including other mods, a fun lock picking mechanic as well as lots of other little, but useful tools and utilities.
 
@@ -17,9 +17,9 @@ This port preserves the original mod's license: **Attribution-NonCommercial 3.0 
 
 ## About This Port
 
-The original Locks mod was built for Minecraft 1.16.5 (Forge 36.x). This port updates it to Minecraft 1.21.1 (Forge 52.x) while preserving the original gameplay mechanics, item IDs, config keys, and network protocol where possible.
+The original Locks mod was built for Minecraft 1.16.5 (Forge 36.x). This port updates it to Minecraft 1.21.1 (NeoForge 21.1.x) while preserving the original gameplay mechanics, item IDs, config keys, and network protocol where possible.
 
-**Version:** 1.7.5 | **Minecraft:** 1.21.1 | **Forge:** 52.1.2+ | **Java:** 21
+**Version:** 1.8.0 | **Minecraft:** 1.21.1 | **NeoForge:** 21.1.216+ | **Java:** 21
 
 ## Features
 
@@ -120,9 +120,13 @@ Locks define resistance; lock picks define technique. **Lock enchantments** go o
 Lock picks are enchantable at the enchanting table (see the `enchantment_value` field below). Each enchantment can be individually enabled — and its effect tuned — in the server config.
 
 ### World Generation
-Generated chests can spawn with a lock whose tier is chosen by **loot value** — the richer a chest's loot table, the stronger its lock. Chests whose loot value falls **below the lowest configured threshold receive no lock at all**, while very valuable chests can receive diamond or netherite locks. The estimator weighs item rarity, enchantments, and stack counts (with sub-linear scaling so bulk common items don't inflate value) and supports per-item value overrides for materials like diamonds and netherite that are valuable despite a common rarity. The whole system can be switched to random weighted selection in the common config.
+Locked chests spawn naturally in structure chests across the **Overworld, the Nether and the End**, as well as in modded dimensions. The lock tier is chosen by **loot value** — the richer a chest's loot table, the stronger its lock. Chests whose loot value falls **below the lowest configured threshold receive no lock at all**, while very valuable chests can receive diamond or netherite locks. The estimator weighs item rarity, enchantments, and stack counts (with sub-linear scaling so bulk common items don't inflate value) and supports per-item value overrides for materials like diamonds and netherite that are valuable despite a common rarity. The whole system can be switched to random weighted selection in the common config.
 
-> **Can I make diamond/netherite locks appear only on high-value chests?** Yes — raise the upper **Loot Value Tiers** so only the richest loot reaches them, and raise the lowest threshold so poor chests get no lock. See [Configuration](#high-value-chest-locks-diamondnetherite) for a worked example.
+**The netherite lock is End-exclusive.** It only generates in End biomes, never in the Overworld, the Nether or a modded dimension — a chest there that qualifies for netherite drops to the next-best tier (diamond) rather than going unlocked. The same rule applies to locks randomised onto structure templates. Two datapack tags control it: `locks:biome_gated_locks` lists the restricted locks (ships with `locks:netherite_lock`), and `locks:biome_gated_lock_biomes` lists the biomes they may appear in (ships with `#minecraft:is_end`). Clear or extend either one to change the rule without touching the mod.
+
+**Not every chest is locked.** The default **Chest Lock Chance** is 0.7, so roughly three in ten structure chests are left bare — a lock on a crate is meant to be something you come across, not a given. Set it to 1.0 to lock every chest or lower it to leave more of them open.
+
+> **Can I make diamond/netherite locks appear only on high-value chests?** Yes — raise the upper **Loot Value Tiers** so only the richest loot reaches them, and raise the lowest threshold so poor chests get no lock. See [Configuration](#high-value-chest-locks-diamondnetherite) for a worked example. Note that the netherite tier additionally only rolls in the End, regardless of loot value.
 
 ### Villager & Wandering Trader Integration
 A configurable villager profession (default toolsmith) sells lock picks and lock mechanisms, and the wandering trader offers lock picks and enchanted locks. Every category — lock picks, locks, and mechanisms — can be toggled independently in the server config, so you can disable easy lock picks while still selling locks. Villager lock sales (early-game wood/copper/iron locks) are available as an opt-in.
@@ -231,7 +235,7 @@ A lock's `pick_wear` **can** be overridden this way, because it is read fresh on
 ## Configuration
 
 ### Common Config (`locks-common.toml`)
-- **Lock Generation Chance** -- Chance (0.0–1.0) that a generated chest receives a lock. Default 1.0 (every chest); lower it to skip some
+- **Chest Lock Chance** -- Chance (0.0–1.0) that a generated chest receives a lock *at all*. Default 0.7 (roughly 3 in 10 chests stay bare); 1.0 locks every chest, 0.0 disables lock generation. Renamed from `Lock Generation Chance` in 1.8.0 so existing configs pick up the new default instead of keeping their stored 1.0
 - **Generation Enchant Chance** -- Probability of generated locks being enchanted (default: 40%)
 - **Generated Locks & Generated Lock Chances** -- Which locks generate and their relative weights (used when Loot-Scaled Locks is disabled)
 - **Randomize Loaded Locks** -- Whether to randomize lock combinations when loading them from structure files
@@ -247,6 +251,7 @@ A lock's `pick_wear` **can** be overridden this way, because it is read fresh on
 - **Max Lockable Volume / Lockable Blocks / Lockable Tags** -- What can be locked and how large a single lock may be
 - **Display** (Hide Lock ID / Hide HUD Enchantments / Hide HUD Tooltip) -- Tooltip and HUD visibility toggles
 - **Enchantment Toggles** -- Each of the 12 enchantments — 7 lock-side (Shocking, Sturdy, Complexity, Silent, Auto-Pick, Reinforced, Awareness) and 5 lock-pick-side (Finesse, Attunement, Grounded, Quiet Hand, Last Catch) — can be individually enabled or disabled, and the lock-pick enchantments' effects tuned, under the **Enchantments** section
+- **Chest Lock Chance** (in `locks-common.toml`) -- Chance (0.0-1.0) that an eligible generated chest receives a lock at all, default 0.7 so about 30% of chests stay bare. `1.0` locks every chest, `0.0` disables lock generation
 - **Shocking** subsection -- Tune Shocking damage and theft punishments (see below)
 - **Netherite Lockpick Unbreakable** -- When enabled, netherite lock picks never break during lock picking (default: false)
 - **Allow Itemless Lock Picking** -- When enabled, an empty main hand can play the lock picking minigame without a lock pick (default: false). Itemless attempts consume nothing, ignore Complexity, and reset progress on a wrong pin. Lock pick items, recipes, loot, trades and enchantments are untouched either way
@@ -302,6 +307,8 @@ To make **diamond or better appear only on high-value chests**, raise the upper 
 
 Now a chest worth ~95 gets a **diamond** lock, one worth ~160 gets **netherite**, ordinary chests get wood→gold, and chests worth under 10 get **no lock**. Tune `Default Item Value`, the rarity multipliers, and `Item Value Overrides` to change how loot value is scored.
 
+Remember that the netherite tier is additionally **End-only** — a threshold of 150 only ever produces a netherite lock in the End; elsewhere that chest falls back to diamond. See [World Generation](#world-generation).
+
 ## Building from Source
 
 **Requirements:** JDK 21
@@ -314,7 +321,7 @@ cd "Locks Reforged"
 # Build the mod JAR
 JAVA_HOME="/path/to/jdk-21" ./gradlew build
 
-# Output: build/libs/locks_reforged-1.7.5.jar
+# Output: build/libs/locks_reforged-1.8.0.jar
 
 # Run the development client
 JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
@@ -322,18 +329,18 @@ JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
 
 ## Installation
 
-1. Install [Minecraft Forge 1.21.1](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.21.1.html) (52.1.2 or later)
-2. Download `locks_reforged-1.7.5.jar` from the releases
+1. Install [NeoForge for Minecraft 1.21.1](https://neoforged.net/) (21.1.216 or later)
+2. Download `locks_reforged-1.8.0.jar` from the releases
 3. Place the JAR in your `.minecraft/mods/` folder
-4. Launch Minecraft with the Forge profile
+4. Launch Minecraft with the NeoForge profile
 
 ## Technical Details
 
 This port involved updating approximately 90 Java source files across the following API changes:
 
 - **Registry System** -- Migrated to deferred lambda suppliers for all registry entries
-- **Capabilities** -- Updated to `ForgeCapabilities` and `CapabilityToken` pattern
-- **World Generation** -- Converted to data-driven JSON biome modifiers
+- **Capabilities** -- Moved to NeoForge's attachment API
+- **World Generation** -- Converted to data-driven JSON biome modifiers (`data/locks/neoforge/biome_modifier/`), restored and split per dimension group in 1.8.0 after the Forge port dropped them
 - **Damage Types** -- Migrated to data-driven damage type system
 - **Rendering** -- Updated to GuiGraphics API and JOML math library
 - **Creative Tabs** -- Migrated from `ItemGroup` to `CreativeModeTab` via `DeferredRegister`

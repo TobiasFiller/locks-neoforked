@@ -1,6 +1,6 @@
 # Locks Reforged
 
-**An unofficial port of the Locks mod by [Melonslise](https://github.com/Melonslise) to Minecraft Forge 1.21.1.**
+**An unofficial port of the Locks mod by [Melonslise](https://github.com/Melonslise) to Minecraft NeoForge 1.21.1.**
 
 Locks is a small but unique mod that lets you attach flexible, universal locks to any block in the game — including blocks from other mods. Protect your doors, chests, furnaces, and more with a dynamic locking system and an interactive lock picking minigame.
 
@@ -45,6 +45,8 @@ Attach locks to **any block** — not just chests. Doors, trapdoors, furnaces, d
 - **Durability** — Durability points before the pick breaks.
 
 Netherite locks and picks are **fire-resistant** and survive in lava, just like vanilla netherite gear. Both are crafted at a smithing table from their diamond equivalent using a Netherite Upgrade Template.
+
+**Netherite locks only generate in the End.** They are the reward for surviving a run to an end city, and they appear nowhere else — no Overworld, Nether or modded structure chest ever receives one. Every other tier generates in all dimensions as usual. Outside the End, a chest that would qualify for a netherite lock drops to the next-best tier (diamond) instead of going unlocked, and the same restriction applies to locks randomised onto structure templates. Server owners can move or lift this via two datapack tags: `locks:biome_gated_locks` (which locks are restricted) and `locks:biome_gated_lock_biomes` (which biomes they may appear in, `#minecraft:is_end` by default).
 
 All locks and lock picks are **fully data-driven** — add your own custom tiers via simple JSON files, or tweak existing stats through config files, TOML overrides, or datapacks. No code changes needed!
 
@@ -110,17 +112,23 @@ Locked blocks are also protected from:
 - Breaking (configurable)
 
 ### Loot-Scaled Lock Generation
-Lock tier is determined by the **value of a chest's loot table contents**. Village chests get wood or copper locks, while end city chests get gold or diamond locks.
+Lock tier is determined by the **value of a chest's loot table contents**. Village chests get wood or copper locks, while end city chests get gold or diamond locks — and, as the one dimension-exclusive tier, **netherite**.
 
 - **Deterministic estimate, cached per loot table** — the value is computed by reading the loot table's own JSON (pools, rolls, weights, nested table references and tag entries) rather than by rolling loot, so the same table always scores the same across restarts and the cost is paid once.
 - **Sub-linear stack count** — item value scales with the square root of stack size, so 64 cobblestone doesn't outrank a diamond sword.
 - **Rarity and enchantment weighting** — an item's rarity tier multiplies its value, and loot-table enchantment functions push an item up a rarity band.
 - **Item value overrides** — configurable per-item base values for materials like diamonds, emeralds, and netherite that are valuable but have common rarity. 15 vanilla items have sensible defaults.
 - **A chest whose loot value falls below the lowest configured threshold gets no lock at all.** Raise the thresholds to reserve the best locks for the best chests and leave ordinary chests unlocked.
-- Can be switched off in favour of random weighted selection, and a separate **Lock Generation Chance** (default 1.0 — every eligible chest) skips chests outright.
+- Independently of all that, **about 30% of chests skip locking entirely** by default, so locked chests stay a find.
+- **The netherite tier is End-only.** Outside the End a chest that qualifies for it falls back to the next-best tier rather than receiving no lock at all.
+
+Two independent reasons a chest can end up bare: its loot value falls below the lowest threshold, or it simply lost the 30% roll described under [World Integration](#world-integration).
+- Can be switched off in favour of random weighted selection, and a separate **Chest Lock Chance** (default 0.7) skips chests outright.
 
 ### World Integration
-- Locked chests spawn naturally in structures with loot-value-scaled tiers
+- Locked chests spawn naturally in structures across the **Overworld, the Nether and the End**, as well as in modded dimensions — not just the Overworld
+- **Roughly 3 in 10 chests are left unlocked by default.** Finding a locked chest should be an event, not a given, so the default chance is 0.7 rather than locking everything — raise **Chest Lock Chance** toward 1.0 if you want every chest sealed, or drop it to leave more of them bare
+- Tiers follow the chest's loot value, with the **netherite lock reserved for the End** (see [Seven Tiers of Locks](#seven-tiers-of-locks-custom) for the full rule)
 - Lock picks, keys and mechanisms are injected into chest loot tables (configurable by pattern, `minecraft:chests/` by default)
 - Villagers of a configurable profession (toolsmith by default) sell lock picks and lock mechanisms — and, as an opt-in, early-game wood/copper/iron locks
 - Wandering traders offer gold and steel picks, enchanted steel locks, and rare enchanted diamond and netherite locks
@@ -250,7 +258,7 @@ Lock mechanisms (Wood, Copper, Iron, Steel) are basic crafting components — th
 All settings are customizable via config files. Note that `locks-server.toml` is **per-world** and lives in a different location than the other two:
 
 **`config/locks-common.toml`** — World generation and item stats
-- **Lock Generation Chance** — Chance (0.0–1.0) that an eligible generated chest receives a lock (default: 1.0, every chest)
+- **Chest Lock Chance** — Chance (0.0–1.0) that an eligible generated chest receives a lock **at all** (default: 0.7, so roughly 3 in 10 chests stay bare)
 - **Generation Enchant Chance** — How often generated locks are enchanted (default: 40%)
 - **Generated Locks / Generated Lock Chances** — Which lock tiers appear in worldgen and their relative weights (used when loot-scaling is off; also the tier order for `Loot Value Tiers`)
 - **Randomize Loaded Locks** — Whether to randomize lock combinations loaded from structure files (default: false)
@@ -284,10 +292,10 @@ All settings are customizable via config files. Note that `locks-server.toml` is
 ## Requirements
 
 - Minecraft **1.21.1**
-- Forge **52.1.2** or later
+- NeoForge **21.1.216** or later
 - Java **21**
 
-Optional: **Curios** (8.x API), **Carry On** (2.2.2+ for Forge 1.21.1). Neither is required.
+Optional: **Curios** (9.x API), **Carry On** (2.2.2+ for NeoForge 1.21.1). Neither is required.
 
 **Multiplayer note:** client and server must run the same version — the lock picking network protocol is version-checked at the handshake, and a mismatched connection is refused cleanly rather than misbehaving later.
 

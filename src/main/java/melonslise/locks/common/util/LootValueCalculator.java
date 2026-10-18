@@ -24,6 +24,14 @@ import net.minecraft.world.item.Rarity;
 
 public final class LootValueCalculator
 {
+	/**
+	 * Directory loot tables live under since 1.21. It was {@code loot_tables} (plural) up to and including 1.20.x,
+	 * and the 1.21 datapack flattening renamed it to the singular form that matches the {@code minecraft:loot_table}
+	 * registry. Getting this wrong is completely silent: every lookup misses and {@link #getLootValue} returns
+	 * {@link Double#NaN} forever, which silently disables loot-scaled lock tiers.
+	 */
+	private static final String LOOT_TABLE_DIR = "loot_table";
+
 	private static final Gson GSON = new Gson();
 	// Thread-safe: getLootValue() can be called from worldgen worker threads (more so under C2ME),
 	// which may insert freshly-computed values concurrently. No null values are ever stored.
@@ -35,20 +43,25 @@ public final class LootValueCalculator
 	{
 		cache.clear();
 		int computed = 0;
-		Map<ResourceLocation, Resource> resources = server.getResourceManager().listResources("loot_tables", id -> id.getPath().endsWith(".json"));
+		String chestPrefix = LOOT_TABLE_DIR + "/chests/";
+		Map<ResourceLocation, Resource> resources = server.getResourceManager().listResources(LOOT_TABLE_DIR, id -> id.getPath().endsWith(".json"));
 		for (ResourceLocation resourceId : resources.keySet())
 		{
 			String path = resourceId.getPath();
-			if (!path.startsWith("loot_tables/chests/") || !path.endsWith(".json"))
+			if (!path.startsWith(chestPrefix) || !path.endsWith(".json"))
 				continue;
 
-			String tablePath = path.substring("loot_tables/".length(), path.length() - ".json".length());
+			String tablePath = path.substring((LOOT_TABLE_DIR + "/").length(), path.length() - ".json".length());
 			ResourceLocation tableId = ResourceLocation.fromNamespaceAndPath(resourceId.getNamespace(), tablePath);
 			Double value = computeLootValue(server, tableId, new HashSet<>());
 			if (value != null)
 				computed++;
 		}
-		Locks.LOGGER.info("Pre-computed loot value estimates for {} chest loot tables", computed);
+		if (computed == 0)
+			Locks.LOGGER.warn("Pre-computed 0 chest loot tables — loot table directory '{}' yielded no tables. "
+				+ "Loot-scaled lock tiers will fall back to random weighted selection.", LOOT_TABLE_DIR);
+		else
+			Locks.LOGGER.info("Pre-computed loot value estimates for {} chest loot tables", computed);
 	}
 
 	public static double getCachedLootValue(ResourceLocation lootTableId)
@@ -86,7 +99,7 @@ public final class LootValueCalculator
 			return null;
 		}
 
-		ResourceLocation resourceId = ResourceLocation.fromNamespaceAndPath(lootTableId.getNamespace(), "loot_tables/" + lootTableId.getPath() + ".json");
+		ResourceLocation resourceId = ResourceLocation.fromNamespaceAndPath(lootTableId.getNamespace(), LOOT_TABLE_DIR + "/" + lootTableId.getPath() + ".json");
 		try
 		{
 			Resource resource = server.getResourceManager().getResource(resourceId).orElse(null);

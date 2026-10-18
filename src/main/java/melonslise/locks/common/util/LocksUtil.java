@@ -10,7 +10,10 @@ import javax.annotation.Nullable;
 
 import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
+import melonslise.locks.common.init.LocksBiomeTags;
 import melonslise.locks.common.init.LocksCapabilities;
+import melonslise.locks.common.init.LocksItemTags;
+import net.minecraft.core.Holder;
 import net.minecraft.world.entity.Entity;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.item.LockItem;
@@ -30,6 +33,7 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
@@ -209,6 +213,19 @@ public final class LocksUtil
 		}
 	}
 
+	/**
+	 * Whether {@link LocksItemTags#BIOME_GATED_LOCKS} locks may be generated at {@code pos}. Fails safe: an
+	 * unknown level or an unloaded biome tag denies gated locks, so a datapack error can never scatter netherite
+	 * locks across every dimension.
+	 */
+	public static boolean biomeGatedLocksAllowed(Level level, BlockPos pos)
+	{
+		if(level == null)
+			return false;
+		Holder<Biome> biome = level.getBiome(pos);
+		return biome != null && biome.is(LocksBiomeTags.BIOME_GATED_LOCK_BIOMES);
+	}
+
 	// Single source of truth for "what lock goes on this chest", shared by worldgen
 	// (LockChestsFeature) and the Respawning Structures compat hook. Returns a ready-to-register
 	// Lockable for the chest at pos, or null if it shouldn't be locked (not a valid lootable chest,
@@ -233,17 +250,20 @@ public final class LocksUtil
 
 		ItemStack stack = ItemStack.EMPTY;
 		boolean usedLootScaling = false;
+		// A biome-gated lock (default: the netherite lock) only rolls where LocksBiomeTags.BIOME_GATED_LOCK_BIOMES
+		// says so, which ships as #minecraft:is_end — i.e. netherite locks spawn in the End and nowhere else.
+		boolean gatedAllowed = biomeGatedLocksAllowed(level, pos);
 		if(LocksConfig.LOOT_SCALED_LOCKS.get())
 		{
 			double lootValue = LootValueCalculator.getLootValue(level.getServer(), container.lootTable.location());
 			if(!Double.isNaN(lootValue))
 			{
-				stack = LocksConfig.getLockForLootValue(lootValue, rng);
+				stack = LocksConfig.getLockForLootValue(lootValue, rng, gatedAllowed);
 				usedLootScaling = true;
 			}
 		}
 		if(!usedLootScaling)
-			stack = LocksConfig.getRandomLock(rng);
+			stack = LocksConfig.getRandomLock(rng, gatedAllowed);
 
 		// When loot-scaled locks are enabled and the loot value is below all tier thresholds, skip this chest
 		if(stack.isEmpty())

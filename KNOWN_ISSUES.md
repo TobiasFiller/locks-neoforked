@@ -2,7 +2,15 @@
 
 ## Port-Specific Notes
 
-1. **Refmap warning in dev**: The mixin refmap (`locks.refmap.json`) shows "could not be read" in the dev environment. This is a known MixinGradle/ForgeGradle cosmetic issue — dev uses official (Mojang) names which match source annotations directly, so no remapping is needed. The refmap IS correctly included in the production JAR. No fix required.
+1. **Refmap warning in dev**: `locks.mixins.json` declares `"refmap": "locks.refmap.json"`, and Mixin logs `Reference map 'locks.refmap.json' for locks.mixins.json could not be read`. The annotation processor does not emit the file and it is **not** in the production JAR either — this warning is therefore expected in both dev and production. It is harmless, not dev-only: NeoForge 1.21.1 resolves mixin targets against the same official (Mojang) names the code is compiled with, so no remapping layer is required and the mixins apply directly (confirmed by locked chests generating correctly). Cosmetic only; no fix needed.
+
+2. **Worldgen datapack folder is NeoForge-specific**: `locks:lock_chests` and `locks:steel_ore` are wired in through `data/locks/neoforge/biome_modifier/*.json`. Note the layout — `neoforge` is a folder **inside** the `locks` namespace, not the namespace itself. NeoForge resolves these via `listResources("neoforge/biome_modifier")`, which internally builds `<namespace>/<path>`; a file at `data/neoforge/biome_modifier/` parses fine but is never listed, so the feature is silently never invoked. There is no error, no log line and no crash — the registry just comes up empty. Worth remembering before adding more worldgen JSON, since a misplaced file is completely silent.
+
+3. **Vanilla has no `add_features` in 1.21.1**: the biome modifier type is `neoforge:add_features` with fields `biomes` / `features` / `step`. Vanilla's `minecraft:add_features` only exists from 1.21.2 onwards, so a datapack copied from a newer version fails to parse here.
+
+4. **Loot tables moved to a singular directory in 1.21**: vanilla resources live under `loot_table/`, not `loot_tables/`. Fixed in `LootValueCalculator` for 1.8.0 (it reported `0 chest loot tables` and silently disabled loot-scaled tiers). Note the two are deliberately different: Locks' **own** injections still read from `locks:loot_tables/inject/` with the plural, because that is our directory and not vanilla's. Do not "fix" it to match.
+
+5. **A silent failure mode worth guarding against generally**: both bugs above (a misplaced worldgen folder, a renamed resource directory) produce no exception, no crash and no error log — the lookup simply finds nothing and the feature quietly stops running. The 1.8.0 fix for loot tables adds an explicit warning on a zero-count precompute for exactly this reason. When adding worldgen or loot JSON, confirm the feature actually *did* something rather than trusting that it loaded.
 
 ## Lock Pick Durability (new in 1.7.3)
 
@@ -321,9 +329,9 @@ Manual QA (needs a world with Locks + Carry On; not runnable in the headless bui
 - [ ] Multiplayer sync when players enter lock areas (ChunkMapMixin packet fix applied in 1.3.0)
 - [ ] Structure template save/load with locks
 - [ ] Modded block compatibility (blocks without BlockEntities)
-- [ ] Loot table injection (verify lock picks/mechanisms appear in dungeon chests)
+- [ ] Loot table injection (verify lock picks/mechanisms appear in dungeon chests) — the injection path `locks:loot_tables/inject/` was never affected by the 1.21 `loot_table` rename and is unchanged in 1.8.0; still unverified in game, since a broken injection now also means loot-value estimation silently returns NaN and drops back to random tiers
 - [ ] Villager/wanderer trades (verify lock items in trade lists)
-- [ ] World generation (verify locked chests spawn in overworld)
+- [ ] World generation — verified on a dedicated server for 1.8.0: `locks:lock_chests` and `locks:steel_ore` load, plains carries them at step 6 / 10, and Overworld chests receive locks. Still to confirm by hand: Nether + End chest generation, that an End City chest can roll a netherite lock, and that no Overworld chest ever can
 - [ ] Lock picking minigame UI
 - [ ] Key ring container UI
 - [ ] Enchantment application on locks (7 lock-side: Shocking, Sturdy, Complexity, Silent, Auto-Pick, Reinforced, Awareness)

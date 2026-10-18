@@ -91,17 +91,25 @@ public class StructureTemplateMixin
 		// only the handler mutation + packet sync. Without C2ME this runs inline on the server thread and
 		// behavior is unchanged; under C2ME it is deferred to the main thread to keep the handler map safe.
 		List<Lockable> built = new ArrayList<>();
+		// Randomized template locks obey the same biome gate as worldgen, so randomizing a template into the
+		// Overworld cannot mint a netherite lock there.
+		boolean gatedAllowed = LocksUtil.biomeGatedLocksAllowed(level, start);
 		for(LockableInfo lkb : this.lockableInfos)
 		{
 			BlockPos pos1 = LocksUtil.transform(lkb.bb.x1, lkb.bb.y1, lkb.bb.z1, settings);
 			BlockPos pos2 = LocksUtil.transform(lkb.bb.x2, lkb.bb.y2, lkb.bb.z2, settings);
 			Cuboid6i bb = new Cuboid6i(pos1.getX() + start.getX(), pos1.getY() + start.getY(), pos1.getZ() + start.getZ(), pos2.getX() + start.getX(), pos2.getY() + start.getY(), pos2.getZ() + start.getZ());
-			ItemStack stack = LocksConfig.RANDOMIZE_LOADED_LOCKS.get() ? LocksConfig.getRandomLock(rng) : lkb.stack;
+			ItemStack stack = LocksConfig.RANDOMIZE_LOADED_LOCKS.get() ? LocksConfig.getRandomLock(rng, gatedAllowed) : lkb.stack;
+			// Every generated lock can be gated out here (e.g. a netherite-only template dropped in the Overworld,
+			// or an empty draw). Keep the template's own lock in that case rather than minting a lockless Lockable.
+			boolean randomized = LocksConfig.RANDOMIZE_LOADED_LOCKS.get() && !stack.isEmpty();
+			if(!randomized)
+				stack = lkb.stack;
 			// Never hand out the template's own Lock: reusing it would give every placement of this structure —
 			// and the world lock the template was captured from — one shared object and one shared combination.
 			// With randomization off the credential is preserved (existing keys keep working), but the pin order
 			// is drawn fresh for each placement.
-			Lock lock = LocksConfig.RANDOMIZE_LOADED_LOCKS.get()
+			Lock lock = randomized
 				? Lock.from(stack)
 				: Lock.generate(lkb.lock.id, lkb.lock.getLength(), lkb.lock.isLocked(), ThreadLocalRandom.current());
 			Transform tr = Transform.fromDirectionAndFace(settings.getRotation().rotate(settings.getMirror().getRotation(lkb.tr.dir).rotate(lkb.tr.dir)), lkb.tr.face, Direction.NORTH);
