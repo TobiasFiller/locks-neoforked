@@ -1,6 +1,12 @@
 {
 	"itemGroup.locks": "Locks",
 
+	"advancements.locks.first_lock.title": "First Pick",
+	"advancements.locks.first_lock.description": "Successfully pick your first lock",
+	"advancements.locks.master_lockpicker.title": "Master Lockpicker",
+	"advancements.locks.master_lockpicker.description": "Pick 100 locks",
+	"stat.locks.locks_picked": "Locks Picked",
+
 	"item.locks.spring": "Spring",
 	"item.locks.wood_lock_mechanism": "Wood Lock Mechanism",
 	"item.locks.iron_lock_mechanism": "Iron Lock Mechanism",

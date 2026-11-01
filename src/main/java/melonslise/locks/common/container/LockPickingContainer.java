@@ -7,6 +7,7 @@ import melonslise.locks.client.gui.LockPickingScreen;
 import melonslise.locks.common.capability.ILockableHandler;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksCapabilities;
+import melonslise.locks.common.init.LocksCriteria;
 import melonslise.locks.common.init.LocksMenuTypes;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LockTypeRegistry;
@@ -265,6 +266,8 @@ public class LockPickingContainer extends AbstractContainerMenu
 		// null, not player: this runs on the server, where passing the player would EXCLUDE them from the sound.
 		this.player.level().playSound(null, this.pos.x, this.pos.y, this.pos.z, LocksSoundEvents.LOCK_OPEN.get(), SoundSource.BLOCKS, 1f, 1f);
 		LocksUtil.resolveLootTables(this.player.level(), target, this.player);
+		if(this.player instanceof ServerPlayer sp)
+			LocksCriteria.onLockPicked(sp);
 	}
 
 	@OnlyIn(Dist.CLIENT)

@@ -1,0 +1,27 @@
+{
+	"display": {
+		"icon": {
+			"id": "locks:iron_lock_pick",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.first_lock.title"
+		},
+		"description": {
+			"translate": "advancements.locks.first_lock.description"
+		},
+		"background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"lock_picked": {
+			"trigger": "locks:lock_picked",
+			"conditions": {
+				"min": 1
+			}
+		}
+	}
+}

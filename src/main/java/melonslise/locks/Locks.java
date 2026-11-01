@@ -8,6 +8,7 @@ import melonslise.locks.common.config.LocksConfig;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.init.LocksCreativeTabs;
+import melonslise.locks.common.init.LocksCriteria;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LocksFeatures;
 import melonslise.locks.common.init.LocksItems;
@@ -34,6 +35,7 @@ public final class Locks
 		modContainer.registerConfig(Type.CLIENT, LocksClientConfig.SPEC);
 
 		LocksCapabilities.register(modBus);
+		LocksCriteria.register(modBus);
 		LocksItems.register(modBus);
 		LocksEnchantments.register();
 		LocksSoundEvents.register(modBus);

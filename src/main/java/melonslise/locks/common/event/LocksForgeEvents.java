@@ -22,6 +22,7 @@ import melonslise.locks.common.container.KeyRingContainer;
 import melonslise.locks.common.container.LockPickingContainer;
 import melonslise.locks.common.container.LockPickingMode;
 import melonslise.locks.common.init.LocksCapabilities;
+import melonslise.locks.common.init.LocksCriteria;
 import melonslise.locks.common.init.LocksItemTags;
 import melonslise.locks.common.init.LocksItems;
 import melonslise.locks.common.init.LocksNetwork;
@@ -451,6 +452,8 @@ public final class LocksForgeEvents
 						LocksUtil.setLocked(world, lkb, false, player);
 						world.playSound(null, pos, LocksSoundEvents.LOCK_OPEN.get(), SoundSource.BLOCKS, 1f, 1f);
 						LocksUtil.resolveLootTables(world, lkb, player);
+						if(player instanceof ServerPlayer sp)
+							LocksCriteria.onLockPicked(sp);
 					}
 					else if(!world.isClientSide)
 					{

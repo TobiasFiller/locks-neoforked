@@ -1,0 +1,27 @@
+{
+	"parent": "locks:lockpicking/first_lock",
+	"display": {
+		"icon": {
+			"id": "locks:netherite_lock_pick",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.master_lockpicker.title"
+		},
+		"description": {
+			"translate": "advancements.locks.master_lockpicker.description"
+		},
+		"frame": "challenge",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"locks_picked": {
+			"trigger": "locks:lock_picked",
+			"conditions": {
+				"min": 100
+			}
+		}
+	}
+}
