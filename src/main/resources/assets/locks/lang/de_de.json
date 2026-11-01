@@ -1,6 +1,17 @@
 {
 	"itemGroup.locks": "Schlösser",
 
+	"advancements.locks.root.title": "Schlösser",
+	"advancements.locks.root.description": "Befestige ein Schloss an allem, was du baust",
+	"advancements.locks.not_just_chests.title": "Nicht nur Truhen",
+	"advancements.locks.not_just_chests.description": "Befestige ein Schloss an einer Tür, Falltür oder einem Fass",
+	"advancements.locks.lock_and_key.title": "Schloss und Schlüssel",
+	"advancements.locks.lock_and_key.description": "Paare einen Schlüsselrohling mit einem Schloss",
+	"advancements.locks.key_ring.title": "Schlüsselring",
+	"advancements.locks.key_ring.description": "Erhalte einen Schlüsselring",
+	"advancements.locks.enchanted_protection.title": "Verzauberter Schutz",
+	"advancements.locks.enchanted_protection.description": "Verzaubere ein Schloss",
+
 	"advancements.locks.first_lock.title": "Erster Dietrich",
 	"advancements.locks.first_lock.description": "Knacke dein erstes Schloss",
 	"advancements.locks.master_lockpicker.title": "Meister im Schlossknacken",

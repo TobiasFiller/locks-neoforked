@@ -3,7 +3,7 @@
 ## Quick Reference
 - **Mod ID**: `locks`
 - **Package**: `melonslise.locks` (original author's package, NOT com.otectus)
-- **Version**: 1.8.0 (set in `gradle.properties` as `mod_version`; `neoforge.mods.toml` pulls it via `${mod_version}`)
+- **Version**: 1.8.1 (set in `gradle.properties` as `mod_version`; `neoforge.mods.toml` pulls it via `${mod_version}`)
 - **MC**: 1.21.1 | **Forge**: 52.1.2 | **Java**: 21
 - **Mappings**: Official
 - **License**: CC BY-NC 3.0 (Attribution-NonCommercial)

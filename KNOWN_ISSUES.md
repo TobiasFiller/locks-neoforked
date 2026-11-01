@@ -12,6 +12,24 @@
 
 5. **A silent failure mode worth guarding against generally**: both bugs above (a misplaced worldgen folder, a renamed resource directory) produce no exception, no crash and no error log — the lookup simply finds nothing and the feature quietly stops running. The 1.8.0 fix for loot tables adds an explicit warning on a zero-count precompute for exactly this reason. When adding worldgen or loot JSON, confirm the feature actually *did* something rather than trusting that it loaded.
 
+## Advancements & Statistics (new in 1.8.1)
+
+Two advancements ship with the mod: `locks:lockpicking/first_lock` (1 lock) and `locks:lockpicking/master_lockpicker` (100 locks, challenge frame). Both are driven by a custom criterion trigger, `locks:lock_picked`, registered in `common/init/LocksCriteria`; the trigger carries the player's lifetime `locks:locks_picked` stat so the `min` field in the advancement JSON decides the threshold instead of duplicating the counting in Java.
+
+**Where the count comes from:** `LocksCriteria#onLockPicked` awards the stat and then triggers the criterion. It is invoked from the two server-side unlock paths that represent picking — `LockPickingContainer#commitUnlock` (physical and itemless minigame) and the Auto-Pick branch in `LocksForgeEvents`. Key, key ring, Master Key and Awareness unlocks deliberately do not count: they are not picking.
+
+**Existing worlds:** the counter is a normal stat, so it starts at 0 on the first join after the update. Prior picks were never recorded and are not backfilled; Master Lockpicker therefore needs 100 fresh picks.
+
+**Note on the advancement tab:** `first_lock` is the root advancement, so the tab in the advancements screen is titled after it ("First Pick" / "Erster Dietrich") rather than "Locks". Add a separate root advancement with a `background` if a dedicated Locks tab is wanted.
+
+**Verified:** `gradlew build` and the JUnit suite pass; both advancement JSONs, the trigger codec and the `locks:locks_picked` custom stat are present in the 1.8.1 JAR. The in-game behavior is manual and listed in the Still Needs Testing list below.
+
+## German Translation (new in 1.8.1)
+
+`assets/locks/lang/de_de.json` covers every key in `en_us.json` (83/83 at the time of writing), including the advancement and statistic keys added in this release, all item and mechanism names, the twelve enchantments and their `.desc` entries, the two death messages, the lock-picking GUI, status/tooltip strings and sound subtitles.
+
+**Verified:** the key sets are identical, every placeholder (`%1$s`, `%2$s`, `%s`) and the `` `ESC` `` hint match the English file, and the JSON parses. The file is UTF-8 without a BOM and is packaged verbatim in the JAR (hash matches the source). In-game rendering is manual and listed below.
+
 ## Lock Pick Durability (new in 1.7.3)
 
 Lock picks are damageable items with a per-tier durability pool, and a wrong pin spends a fixed amount of
@@ -395,3 +413,15 @@ This also caps the tuning range: diamond must stay below netherite, and netherit
 - [ ] Netherite lock sold by wandering trader (rare, enchanted)
 - [ ] Async loot precompute doesn't block world loading
 - [ ] Lockpicking GUI renders correctly with ImmediatelyFast installed
+
+### Advancements, statistics and German (new in 1.8.1)
+- [ ] A fresh player picks their first lock → **First Pick** toast appears, the advancement is listed in the tab, and the statistics screen shows **Locks Picked: 1**
+- [ ] The stat increments on a physical pick, an itemless pick and an Auto-Pick instant unlock, but **not** on a matching key, key ring, Master Key or Awareness-owner unlock
+- [ ] The 100th pick grants **Master Lockpicker** (challenge frame, toast/chat announcement), and the stat reads 100
+- [ ] The counter survives death, respawn, dimension change and a full server restart
+- [ ] Placing a lock on a door, trapdoor or barrel grants **Not Just Chests**; placing one on a chest does not
+- [ ] Pairing a Key Blank with a lock grants **Lock and Key**; crafting or picking up a Key Ring grants **Key Ring**
+- [ ] Enchanting a lock at an enchanting table grants **Enchanted Protection** (challenge frame)
+- [ ] The advancement tab is titled **Locks** (root), not "First Pick"
+- [ ] Set the game language to **Deutsch** → advancement titles/descriptions, item and mechanism names, all enchantment names/descriptions, death messages, lock-picking GUI text, status messages, tooltips and sound subtitles are German, with no missing-key fallback to the English string
+- [ ] German death message keeps both arguments in order (`/kill` while shocked, and while fighting a second player)

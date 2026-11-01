@@ -1,0 +1,24 @@
+{
+	"parent": "locks:root",
+	"display": {
+		"icon": {
+			"id": "locks:key",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.lock_and_key.title"
+		},
+		"description": {
+			"translate": "advancements.locks.lock_and_key.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"paired": {
+			"trigger": "locks:key_paired"
+		}
+	}
+}

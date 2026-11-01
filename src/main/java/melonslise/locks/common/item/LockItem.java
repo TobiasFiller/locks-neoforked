@@ -10,6 +10,7 @@ import melonslise.locks.common.capability.ILockableHandler;
 import melonslise.locks.common.capability.ISelection;
 import melonslise.locks.common.config.LocksServerConfig;
 import melonslise.locks.common.init.LocksCapabilities;
+import melonslise.locks.common.init.LocksCriteria;
 import melonslise.locks.common.init.LocksEnchantments;
 import melonslise.locks.common.init.LocksSoundEvents;
 import melonslise.locks.common.init.LockTypeRegistry;
@@ -21,6 +22,10 @@ import melonslise.locks.common.util.LocksUtil;
 import melonslise.locks.common.util.Transform;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.ChestBlock;
+import net.minecraft.world.level.block.DoorBlock;
+import net.minecraft.world.level.block.TrapDoorBlock;
+import net.minecraft.world.level.block.BarrelBlock;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.entity.player.Player;
@@ -151,6 +156,12 @@ public class LockItem extends LockingItem
 			world.playSound(null, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 			if (!player.isCreative())
 				stack.shrink(1);
+			if (!world.isClientSide && player instanceof ServerPlayer sp)
+			{
+				BlockState targetState = world.getBlockState(pos);
+				if (targetState.getBlock() instanceof DoorBlock || targetState.getBlock() instanceof TrapDoorBlock || targetState.getBlock() instanceof BarrelBlock)
+					LocksCriteria.onLockPlacedOnTarget(sp);
+			}
 		}
 		return InteractionResult.SUCCESS;
 	}
@@ -199,6 +210,12 @@ public class LockItem extends LockingItem
 		world.playSound(null, pos, LocksSoundEvents.LOCK_CLOSE.get(), SoundSource.BLOCKS, 1f, 1f);
 		if (!player.isCreative())
 			stack.shrink(1);
+		if (!world.isClientSide && player instanceof ServerPlayer sp)
+		{
+			BlockState targetState = state;
+			if (targetState.getBlock() instanceof DoorBlock || targetState.getBlock() instanceof TrapDoorBlock || targetState.getBlock() instanceof BarrelBlock)
+				LocksCriteria.onLockPlacedOnTarget(sp);
+		}
 		return InteractionResult.SUCCESS;
 	}
 

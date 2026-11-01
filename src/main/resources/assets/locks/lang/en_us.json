@@ -1,6 +1,17 @@
 {
 	"itemGroup.locks": "Locks",
 
+	"advancements.locks.root.title": "Locks",
+	"advancements.locks.root.description": "Attach a lock to anything you build",
+	"advancements.locks.not_just_chests.title": "Not Just Chests",
+	"advancements.locks.not_just_chests.description": "Place a lock on a door, trapdoor or barrel",
+	"advancements.locks.lock_and_key.title": "Lock and Key",
+	"advancements.locks.lock_and_key.description": "Pair a Key Blank with a lock",
+	"advancements.locks.key_ring.title": "Key Ring",
+	"advancements.locks.key_ring.description": "Obtain a Key Ring",
+	"advancements.locks.enchanted_protection.title": "Enchanted Protection",
+	"advancements.locks.enchanted_protection.description": "Enchant a lock",
+
 	"advancements.locks.first_lock.title": "First Pick",
 	"advancements.locks.first_lock.description": "Successfully pick your first lock",
 	"advancements.locks.master_lockpicker.title": "Master Lockpicker",

@@ -1,0 +1,24 @@
+{
+	"parent": "locks:root",
+	"display": {
+		"icon": {
+			"id": "locks:iron_lock",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.not_just_chests.title"
+		},
+		"description": {
+			"translate": "advancements.locks.not_just_chests.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"placed_on_block": {
+			"trigger": "locks:lock_placed_on_target"
+		}
+	}
+}

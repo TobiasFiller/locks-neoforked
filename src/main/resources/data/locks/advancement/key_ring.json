@@ -1,0 +1,29 @@
+{
+	"parent": "locks:root",
+	"display": {
+		"icon": {
+			"id": "locks:key_ring",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.key_ring.title"
+		},
+		"description": {
+			"translate": "advancements.locks.key_ring.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"obtained": {
+			"trigger": "minecraft:inventory_changed",
+			"conditions": {
+				"items": [
+					{ "items": ["locks:key_ring"] }
+				]
+			}
+		}
+	}
+}

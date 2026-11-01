@@ -17,6 +17,12 @@ public final class LocksCriteria
 	public static final DeferredHolder<CriterionTrigger<?>, LockPickedTrigger> LOCK_PICKED =
 		TRIGGERS.register("lock_picked", LockPickedTrigger::new);
 
+	public static final DeferredHolder<CriterionTrigger<?>, LockPlacedOnTargetTrigger> NOT_JUST_CHESTS =
+		TRIGGERS.register("lock_placed_on_target", LockPlacedOnTargetTrigger::new);
+
+	public static final DeferredHolder<CriterionTrigger<?>, KeyPairedTrigger> KEY_PAIRED =
+		TRIGGERS.register("key_paired", KeyPairedTrigger::new);
+
 	// The lifetime total is kept as a custom stat: it persists with the player, is copied on death and also
 	// shows up in the vanilla statistics screen.
 	public static final DeferredRegister<ResourceLocation> STATS = DeferredRegister.create(Registries.CUSTOM_STAT, Locks.ID);
@@ -37,5 +43,15 @@ public final class LocksCriteria
 		player.awardStat(Stats.CUSTOM.get(LOCKS_PICKED.get()));
 		int count = player.getStats().getValue(Stats.CUSTOM.get(LOCKS_PICKED.get()));
 		LOCK_PICKED.get().trigger(player, count);
+	}
+
+	public static void onLockPlacedOnTarget(ServerPlayer player)
+	{
+		NOT_JUST_CHESTS.get().trigger(player);
+	}
+
+	public static void onKeyPaired(ServerPlayer player)
+	{
+		KEY_PAIRED.get().trigger(player);
 	}
 }

@@ -901,4 +901,14 @@ public final class LocksForgeEvents
 				return lkb;
 		return null;
 	}
+
+	@SubscribeEvent
+	public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event)
+	{
+		if(event.getCrafting().getItem() != LocksItems.KEY.get())
+			return;
+		if(!(event.getEntity() instanceof ServerPlayer sp))
+			return;
+		LocksCriteria.onKeyPaired(sp);
+	}
 }

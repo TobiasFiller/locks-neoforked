@@ -1,4 +1,5 @@
 {
+	"parent": "locks:root",
 	"display": {
 		"icon": {
 			"id": "locks:iron_lock_pick",

@@ -1,0 +1,24 @@
+{
+	"display": {
+		"icon": {
+			"id": "locks:iron_lock",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.root.title"
+		},
+		"description": {
+			"translate": "advancements.locks.root.description"
+		},
+		"background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+		"frame": "task",
+		"show_toast": false,
+		"announce_to_chat": false,
+		"hidden": false
+	},
+	"criteria": {
+		"tick": {
+			"trigger": "minecraft:tick"
+		}
+	}
+}

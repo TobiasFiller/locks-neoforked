@@ -19,7 +19,7 @@ This port preserves the original mod's license: **Attribution-NonCommercial 3.0 
 
 The original Locks mod was built for Minecraft 1.16.5 (Forge 36.x). This port updates it to Minecraft 1.21.1 (NeoForge 21.1.x) while preserving the original gameplay mechanics, item IDs, config keys, and network protocol where possible.
 
-**Version:** 1.8.0 | **Minecraft:** 1.21.1 | **NeoForge:** 21.1.216+ | **Java:** 21
+**Version:** 1.8.1 | **Minecraft:** 1.21.1 | **NeoForge:** 21.1.216+ | **Java:** 21
 
 ## Features
 
@@ -344,7 +344,7 @@ cd "Locks Reforged"
 # Build the mod JAR
 JAVA_HOME="/path/to/jdk-21" ./gradlew build
 
-# Output: build/libs/locks_reforged-1.8.0.jar
+# Output: build/libs/locks_reforged-1.8.1.jar
 
 # Run the development client
 JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
@@ -353,7 +353,7 @@ JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
 ## Installation
 
 1. Install [NeoForge for Minecraft 1.21.1](https://neoforged.net/) (21.1.216 or later)
-2. Download `locks_reforged-1.8.0.jar` from the releases
+2. Download `locks_reforged-1.8.1.jar` from the releases
 3. Place the JAR in your `.minecraft/mods/` folder
 4. Launch Minecraft with the NeoForge profile
 

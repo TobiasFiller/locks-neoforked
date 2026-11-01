@@ -1,0 +1,32 @@
+{
+	"parent": "locks:root",
+	"display": {
+		"icon": {
+			"id": "locks:diamond_lock",
+			"count": 1
+		},
+		"title": {
+			"translate": "advancements.locks.enchanted_protection.title"
+		},
+		"description": {
+			"translate": "advancements.locks.enchanted_protection.description"
+		},
+		"frame": "challenge",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"enchanted": {
+			"trigger": "minecraft:enchanted_item",
+			"conditions": {
+				"item": {
+					"items": ["locks:wood_lock","locks:copper_lock","locks:iron_lock","locks:steel_lock","locks:gold_lock","locks:diamond_lock","locks:netherite_lock"]
+				},
+				"levels": {
+					"min": 1
+				}
+			}
+		}
+	}
+}

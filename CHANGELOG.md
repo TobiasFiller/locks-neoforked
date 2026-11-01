@@ -1,5 +1,25 @@
 # Locks Reforged Changelog
 
+## 1.8.1
+
+### Advancements for lock picking and lock use
+
+- **A new root advancement, `locks:root`,** creates a dedicated **Locks** tab in the advancements screen (previously the tab was named after First Pick).
+- **First Pick** (`locks:lockpicking/first_lock`) is awarded for the first successfully picked lock. **Master Lockpicker** (`locks:lockpicking/master_lockpicker`, a challenge, 100) follows.
+- **Not Just Chests** rewards placing a lock on a door, trapdoor or barrel, highlighting that locks work on any block. Backed by a custom trigger (`locks:lock_placed_on_target`) fired only for those target blocks.
+- **Lock and Key** rewards pairing a Key Blank with a lock; **Key Ring** follows for obtaining a Key Ring. Lock and Key uses a custom trigger (`locks:key_paired`, fired on crafting a key); Key Ring uses `inventory_changed`.
+- **Enchanted Protection** (a challenge) rewards enchanting a lock for the first time.
+- **A new server-side criterion, `locks:lock_picked`,** carries the player's lifetime total rather than a single event, so the `min` value in the advancement JSON decides the milestone. It defaults to 1, which also makes hand-written datapack advancements easy to add.
+- **A real statistic backs them.** `locks:locks_picked` is registered as a custom stat, appears in the vanilla statistics screen as **Locks Picked**, and persists across death and respawn. The advancement and the stat can never disagree because both read the same counter.
+- **Every successful pick counts, and nothing else does.** The pin minigame counts physical and itemless picks, and so does the Auto-Pick enchantment's instant unlock. Opening a lock with a matching key, key ring, Master Key or Awareness ownership is not a pick and does not advance either count.
+- **Existing worlds start the counter at zero.** Picks made before 1.8.1 were never recorded, so Master Lockpicker requires 100 picks after the update; First Pick will award itself on the next successful pick.
+
+### German translation
+
+- **`de_de.json` is complete:** all 83 keys of `en_us.json` are translated, including the new advancement and statistic entries, item and mechanism names, all twelve enchantments and their descriptions, death messages, GUI/status/tooltip strings and sound subtitles.
+- **Placeholders are preserved exactly** (`%1$s`, `%2$s`, `%s`, the `` `ESC` `` key hint), so death and tooltip messages keep their argument order.
+- The file is UTF-8 encoded and ships inside the JAR alongside `en_us.json`.
+
 ## 1.8.0
 
 ### Roughly 30% of chests are now left unlocked
