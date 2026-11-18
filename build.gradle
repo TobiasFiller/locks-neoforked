@@ -13,7 +13,7 @@ version = project.mod_version
 group = project.mod_group_id
 
 base {
-    archivesName = 'locks_reforged'
+    archivesName = 'locks_neoforked'
 }
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
@@ -111,6 +111,45 @@ processResources {
 test {
     useJUnitPlatform()
 }
+
+// Enforce the no-blocking-fetch contract documented in LocksThreadUtil. Chunk generation runs on worker
+// threads in 1.21.1; Level#getBiome / getChunk / getChunkAt join a chunk future there and deadlock the
+// server watchdog. LocksWorldAccess is the only allowed world-access path in these packages.
+tasks.register('checkNoBlockingWorldgenCalls') {
+    group = 'verification'
+    description = 'Fails when mixin/ or common/worldgen/ reintroduce blocking chunk or biome lookups.'
+
+    def guardedDirs = [
+        file('src/main/java/melonslise/locks/mixin'),
+        file('src/main/java/melonslise/locks/common/worldgen')
+    ]
+    def forbidden = ~/\.getBiome\s*\(|\.getChunkAt\s*\(|\.getChunk\s*\(/
+
+    doLast {
+        def violations = []
+        guardedDirs.each { dir ->
+            if (!dir.exists())
+                return
+            dir.eachFileRecurse { f ->
+                if (!f.name.endsWith('.java'))
+                    return
+                f.readLines('UTF-8').eachWithIndex { line, i ->
+                    def trimmed = line.trim()
+                    // Comments document the contract; only executable lines matter.
+                    if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*'))
+                        return
+                    if (forbidden.matcher(line).find())
+                        violations << "${rootDir.toPath().relativize(f.toPath())}:${i + 1}: ${trimmed}"
+                }
+            }
+        }
+        if (!violations.isEmpty())
+            throw new GradleException('Blocking chunk/biome lookup in worldgen/mixin code:\n' +
+                violations.join('\n') + '\nUse melonslise.locks.common.util.LocksWorldAccess instead.')
+    }
+}
+
+tasks.named('check') { dependsOn 'checkNoBlockingWorldgenCalls' }
 
 jar {
     manifest {

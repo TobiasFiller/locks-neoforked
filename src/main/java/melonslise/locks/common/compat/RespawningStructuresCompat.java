@@ -12,6 +12,7 @@ import melonslise.locks.common.init.LocksCapabilities;
 import melonslise.locks.common.util.Cuboid6i;
 import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LocksUtil;
+import melonslise.locks.common.util.LocksWorldAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
@@ -126,7 +127,7 @@ public final class RespawningStructuresCompat
 					if(!bb.isInside(pos))
 						continue;
 					// Right halves of double chests return null, so double chests get a single lock
-					Lockable lkb = LocksUtil.createChestLockable(level, level, pos, rng);
+					Lockable lkb = LocksUtil.createChestLockable(level, level, pos, rng, LocksWorldAccess.biomeAt(chunk, pos));
 					if(lkb != null)
 						handler.add(lkb);
 				}

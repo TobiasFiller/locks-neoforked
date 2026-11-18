@@ -9,10 +9,13 @@ import melonslise.locks.common.util.ILockableProvider;
 import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LocksThreadUtil;
 import melonslise.locks.common.util.LocksUtil;
+import melonslise.locks.common.util.LocksWorldAccess;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.WorldGenLevel;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.ImposterProtoChunk;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -34,13 +37,21 @@ public class LockChestsFeature extends Feature<NoneFeatureConfiguration>
 		RandomSource rng = context.random();
 		BlockPos pos = context.origin();
 
-		Lockable lkb = LocksUtil.createChestLockable(world, world.getLevel(), pos, rng);
+		// Resolve the biome from the generation context's chunk cache, never via level.getBiome(pos):
+		// this place() runs on a worldgen worker and a blocking chunk fetch would deadlock the server.
+		Holder<Biome> biome = LocksWorldAccess.biomeAt(world, pos);
+		Lockable lkb = LocksUtil.createChestLockable(world, world.getLevel(), pos, rng, biome);
 		if (lkb == null)
 			return false;
 
 		lkb.bb.getContainedChunks((x, z) ->
 		{
-			ChunkAccess access = world.getChunk(x, z);
+			// The helper uses the cache-only WorldGenRegion lookup and returns null when the neighbour chunk
+			// is outside the current generation dependencies. Skip that border lockable instead of failing
+			// worldgen (or joining a chunk future).
+			ChunkAccess access = LocksWorldAccess.chunkIfPresent(world, x, z);
+			if(access == null)
+				return false;
 			if (access instanceof ImposterProtoChunk imposter)
 			{
 				// This neighbour already finished generating: it is an ImposterProtoChunk wrapping a full

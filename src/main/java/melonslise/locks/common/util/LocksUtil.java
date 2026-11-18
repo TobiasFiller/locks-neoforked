@@ -214,15 +214,16 @@ public final class LocksUtil
 	}
 
 	/**
-	 * Whether {@link LocksItemTags#BIOME_GATED_LOCKS} locks may be generated at {@code pos}. Fails safe: an
-	 * unknown level or an unloaded biome tag denies gated locks, so a datapack error can never scatter netherite
-	 * locks across every dimension.
+	 * Whether {@link LocksItemTags#BIOME_GATED_LOCKS} locks may be generated at {@code pos}. Fails safe: a
+	 * missing biome (unloaded chunk, worldgen dependency radius, or a datapack error) denies gated locks, so a
+	 * datapack error can never scatter netherite locks across every dimension.
+	 *
+	 * <p>Takes only the biome holder, never a {@code Level}. This makes a blocking chunk fetch impossible at
+	 * this call site: {@code Level#getBiome} joins a chunk future and deadlocks when called from a
+	 * chunk-generation worker. Use {@link LocksWorldAccess#biomeAt} to obtain the holder safely.
 	 */
-	public static boolean biomeGatedLocksAllowed(Level level, BlockPos pos)
+	public static boolean biomeGatedLocksAllowed(@Nullable Holder<Biome> biome)
 	{
-		if(level == null)
-			return false;
-		Holder<Biome> biome = level.getBiome(pos);
 		return biome != null && biome.is(LocksBiomeTags.BIOME_GATED_LOCK_BIOMES);
 	}
 
@@ -231,7 +232,8 @@ public final class LocksUtil
 	// Lockable for the chest at pos, or null if it shouldn't be locked (not a valid lootable chest,
 	// failed the generation chance, the right half of a double chest, or no lock tier matched).
 	// access is used for block/block-entity lookups; level provides the lockable handler + server.
-	public static Lockable createChestLockable(LevelAccessor access, Level level, BlockPos pos, RandomSource rng)
+	// biome is the already-resolved holder at pos — pass null when it cannot be read without loading a chunk.
+	public static Lockable createChestLockable(LevelAccessor access, Level level, BlockPos pos, RandomSource rng, @Nullable Holder<Biome> biome)
 	{
 		BlockState state = access.getBlockState(pos);
 		if(!state.hasProperty(ChestBlock.TYPE))
@@ -252,7 +254,7 @@ public final class LocksUtil
 		boolean usedLootScaling = false;
 		// A biome-gated lock (default: the netherite lock) only rolls where LocksBiomeTags.BIOME_GATED_LOCK_BIOMES
 		// says so, which ships as #minecraft:is_end — i.e. netherite locks spawn in the End and nowhere else.
-		boolean gatedAllowed = biomeGatedLocksAllowed(level, pos);
+		boolean gatedAllowed = biomeGatedLocksAllowed(biome);
 		if(LocksConfig.LOOT_SCALED_LOCKS.get())
 		{
 			double lootValue = LootValueCalculator.getLootValue(level.getServer(), container.lootTable.location());

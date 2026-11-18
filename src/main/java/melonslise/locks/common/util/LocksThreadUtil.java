@@ -15,6 +15,11 @@ import net.minecraft.server.TickTask;
  * the non-thread-safe handler map or sending packets corrupts state (issue #10:
  * ArrayIndexOutOfBoundsException in LevelChunk). In that case the work is deferred to the next server tick
  * on the main thread, restoring the single-threaded invariant the rest of the mod assumes.
+ *
+ * <p><b>Note:</b> since 1.20.5 vanilla chunk-status work (features and structure placement) also runs on
+ * {@code ChunkGenerationTask} workers, even without C2ME. "No async chunk mod" therefore does NOT imply
+ * "main thread". Never fetch a chunk or biome from a worldgen/mixin callback — use
+ * {@link LocksWorldAccess}, whose reads are cache-only and never join a chunk future.
  */
 public final class LocksThreadUtil
 {

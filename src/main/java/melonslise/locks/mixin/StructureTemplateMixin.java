@@ -22,6 +22,7 @@ import melonslise.locks.common.util.Lockable;
 import melonslise.locks.common.util.LockableInfo;
 import melonslise.locks.common.util.LocksThreadUtil;
 import melonslise.locks.common.util.LocksUtil;
+import melonslise.locks.common.util.LocksWorldAccess;
 import melonslise.locks.common.util.Transform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -91,14 +92,17 @@ public class StructureTemplateMixin
 		// only the handler mutation + packet sync. Without C2ME this runs inline on the server thread and
 		// behavior is unchanged; under C2ME it is deferred to the main thread to keep the handler map safe.
 		List<Lockable> built = new ArrayList<>();
-		// Randomized template locks obey the same biome gate as worldgen, so randomizing a template into the
-		// Overworld cannot mint a netherite lock there.
-		boolean gatedAllowed = LocksUtil.biomeGatedLocksAllowed(level, start);
 		for(LockableInfo lkb : this.lockableInfos)
 		{
 			BlockPos pos1 = LocksUtil.transform(lkb.bb.x1, lkb.bb.y1, lkb.bb.z1, settings);
 			BlockPos pos2 = LocksUtil.transform(lkb.bb.x2, lkb.bb.y2, lkb.bb.z2, settings);
 			Cuboid6i bb = new Cuboid6i(pos1.getX() + start.getX(), pos1.getY() + start.getY(), pos1.getZ() + start.getZ(), pos2.getX() + start.getX(), pos2.getY() + start.getY(), pos2.getZ() + start.getZ());
+			// Randomized template locks obey the same biome gate as worldgen. Evaluate it at the lockable's own
+			// position, not the structure origin (a structure can span several biomes), and read it without
+			// loading: placeInWorld runs on a chunk-generation worker in 1.21.1, where Level#getBiome joins a
+			// chunk future and deadlocks the server. An unavailable biome fails safe (no gated lock).
+			BlockPos center = new BlockPos(bb.x1 + (bb.x2 - bb.x1) / 2, bb.y1 + (bb.y2 - bb.y1) / 2, bb.z1 + (bb.z2 - bb.z1) / 2);
+			boolean gatedAllowed = LocksUtil.biomeGatedLocksAllowed(LocksWorldAccess.biomeAt(world, center));
 			ItemStack stack = LocksConfig.RANDOMIZE_LOADED_LOCKS.get() ? LocksConfig.getRandomLock(rng, gatedAllowed) : lkb.stack;
 			// Every generated lock can be gated out here (e.g. a netherite-only template dropped in the Overworld,
 			// or an empty draw). Keep the template's own lock in that case rather than minting a lockless Lockable.
