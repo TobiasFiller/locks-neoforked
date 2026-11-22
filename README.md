@@ -360,7 +360,7 @@ cd "Locks Reforged"
 # Build the mod JAR
 JAVA_HOME="/path/to/jdk-21" ./gradlew build
 
-# Output: build/libs/locks_reforged-1.8.1.jar
+# Output: build/libs/locks_neoforked-1.8.3.jar
 
 # Run the development client
 JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
@@ -369,9 +369,15 @@ JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
 ## Installation
 
 1. Install [NeoForge for Minecraft 1.21.1](https://neoforged.net/) (21.1.216 or later)
-2. Download `locks_reforged-1.8.1.jar` from the releases
+2. Download `locks_neoforked-1.8.3.jar` from the releases
 3. Place the JAR in your `.minecraft/mods/` folder
 4. Launch Minecraft with the NeoForge profile
+
+## Releasing
+
+A release is started manually from **Actions → Release → Run workflow** in the GitHub repository. The version
+is read from `gradle.properties`, so there is nothing to type; the workflow publishes to GitHub Releases and
+CurseForge. See [RELEASING.md](RELEASING.md) for the one-time token setup and the exact steps.
 
 ## Technical Details
 
