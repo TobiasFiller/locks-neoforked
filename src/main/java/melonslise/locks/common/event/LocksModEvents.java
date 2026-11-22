@@ -44,6 +44,12 @@ public final class LocksModEvents
 	@SubscribeEvent
 	public static void onConfigLoad(ModConfigEvent e)
 	{
+		// ModConfigEvent is the base type: it is also fired for Unloading (server shutdown), when
+		// NeoForge has already detached the spec and every ConfigValue.get() throws
+		// "Cannot get config value before config is loaded". Only rebuild while values are readable.
+		if(!(e instanceof ModConfigEvent.Loading) && !(e instanceof ModConfigEvent.Reloading))
+			return;
+
 		if(e.getConfig().getSpec() == LocksConfig.SPEC)
 		{
 			LocksConfig.init();

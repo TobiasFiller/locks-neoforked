@@ -93,9 +93,11 @@ public class LocksServerConfig
 	public static final ModConfigSpec.BooleanValue CARRYON_DENY_PARTIAL_MULTIBLOCK;
 	public static final ModConfigSpec.BooleanValue CARRYON_LOG_TRANSFERS;
 
-	public static Pattern[] lockableBlocks;
-	public static List<TagKey<Block>> lockableTags;
-	public static String[][] lootTablePatterns;
+	// Rebuilt on config load/reload. A reload can be dispatched from the config file watcher thread,
+	// so publish the three derived tables together atomically for readers on other threads.
+	public static volatile Pattern[] lockableBlocks;
+	public static volatile List<TagKey<Block>> lockableTags;
+	public static volatile String[][] lootTablePatterns;
 
 	static
 	{
@@ -321,6 +323,10 @@ public class LocksServerConfig
 
 	public static void init()
 	{
+		// Defensive: the config spec is detached during Unloading, before any event handlers run.
+		if(!SPEC.isLoaded())
+			return;
+
 		lockableBlocks = LOCKABLE_BLOCKS.get().stream().map(s -> Pattern.compile(s)).toArray(Pattern[]::new);
 
 		List<TagKey<Block>> tags = new ArrayList<>();

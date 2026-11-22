@@ -1,5 +1,20 @@
 # Locks Reforged Changelog
 
+## 1.8.3
+
+### Clean dedicated-server shutdown
+
+- **Fixed a crash on server stop** (`Cannot get config value before config is loaded`). The config event handler also ran for NeoForge's `Unloading` event, after the config spec had already been detached; it now rebuilds derived values only on load and reload. Editing a config file while the server runs still refreshes the lockable blocks/tags and loot-table patterns.
+
+## 1.8.2
+
+### No more server freeze during structure generation
+
+- **Fixed a dedicated-server freeze during chunk generation.** A server could hang while placing a structure; the watchdog then reported a single tick taking an absurd amount of time. In 1.21.1, features and structure placement run on `ChunkGenerationTask` worker threads even **without** C2ME, and Locks resolved chunks and biomes through `Level#getBiome` / `getChunk` there. Those calls join a chunk future; when the server thread was waiting for the same generation task, the two threads deadlocked permanently. Worldgen, chest placement and structure-template placement now use only cache reads (new `LocksWorldAccess` helper) and never force a chunk to load.
+- **Missing chunk or biome data fails safe.** A lockable spanning a chunk outside the current generation dependencies is skipped instead of failing worldgen, and a biome-gated lock (the Netherite lock by default) is not generated when its biome cannot be read without loading a chunk. Randomised template locks evaluate that gate at each lockable's own position rather than the structure origin, so a structure spanning several biomes can no longer mint a Netherite lock in the Overworld.
+- **A Gradle check guards the fix:** `checkNoBlockingWorldgenCalls` (part of `check`) now fails the build if `mixin/` or `common/worldgen/` reintroduce `getBiome`, `getChunk` or `getChunkAt`.
+- **The JAR base name changed** from `locks_reforged` to `locks_neoforked`.
+
 ## 1.8.1
 
 ### Advancements for lock picking and lock use

@@ -308,6 +308,10 @@ public final class LocksConfig
 	// https://gist.github.com/raws/1667807
 	public static void init()
 	{
+		// Defensive: the config spec is detached during Unloading, before any event handlers run.
+		if(!SPEC.isLoaded())
+			return;
+
 		weightedGeneratedLocks = new TreeMap<>();
 		weightTotal = 0;
 		ungatedWeightedGeneratedLocks = new TreeMap<>();
