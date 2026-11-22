@@ -12,6 +12,10 @@
 - The cutoff works alongside the existing lower bound: a chest still needs to reach the lowest **Loot Value Tiers** threshold, pass **Chest Lock Chance**, and roll a tier. Exactly at the limit is still eligible; only values above it are cut off.
 - Like the rest of loot-scaled generation, the setting only applies while **Enable Loot-Scaled Locks** is on. When loot scaling is disabled, the random weighted system is unchanged.
 
+### In-game config screen
+
+- **Locks now has a Config button in the Mods menu.** A client-only mod class registers NeoForge's built-in `IConfigScreenFactory` / `ConfigurationScreen`, so all three TOML files can be edited in-game without a third-party config GUI mod. English and German labels were added for every config value and section; descriptions still come from the TOML comments. Server config stays read-only while connected to a server or an open-to-LAN world.
+
 ## 1.8.2
 
 ### No more server freeze during structure generation

@@ -234,6 +234,8 @@ A lock's `pick_wear` **can** be overridden this way, because it is read fresh on
 
 ## Configuration
 
+Locks registers NeoForge's built-in config screen, so you can edit all three files in-game from **Mods → Locks → Config**. Labels are translated into English and German; the longer descriptions are the TOML comments. `locks-server.toml` is per-world and can only be edited from the screen in a single-player world (not on a remote server or while open to LAN). Editing the files directly still works.
+
 ### Common Config (`locks-common.toml`)
 - **Chest Lock Chance** -- Chance (0.0–1.0) that a generated chest receives a lock *at all*. Default 0.7 (roughly 3 in 10 chests stay bare); 1.0 locks every chest, 0.0 disables lock generation. Renamed from `Lock Generation Chance` in 1.8.0 so existing configs pick up the new default instead of keeping their stored 1.0
 - **Generation Enchant Chance** -- Probability of generated locks being enchanted (default: 40%)

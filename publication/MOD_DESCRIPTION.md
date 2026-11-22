@@ -235,8 +235,9 @@ appear in and ships with `#minecraft:is_end`. Clear or extend either to move a t
 <details>
 <summary>Configuration</summary>
 
-All settings are config-driven. Note that `locks-server.toml` is **per-world** and lives in a different location
-than the other two.
+All settings are config-driven, and can be edited in-game via **Mods → Locks → Config** using NeoForge's built-in
+config screen (English/German labels). Note that `locks-server.toml` is **per-world** and lives in a different
+location than the other two; like NeoForge's screen, it is read-only while connected to a server or an LAN world.
 
 **`config/locks-common.toml`** — world generation and item stats
 
