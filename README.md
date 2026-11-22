@@ -376,8 +376,8 @@ JAVA_HOME="/path/to/jdk-21" ./gradlew runClient
 ## Releasing
 
 A release is started manually from **Actions → Release → Run workflow** in the GitHub repository. The version
-is read from `gradle.properties`, so there is nothing to type; the workflow publishes to GitHub Releases and
-CurseForge. See [RELEASING.md](RELEASING.md) for the one-time token setup and the exact steps.
+is read from `gradle.properties`, so there is nothing to type; the workflow publishes to GitHub Releases,
+CurseForge and Modrinth. See [RELEASING.md](RELEASING.md) for the one-time token setup and the exact steps.
 
 ## Technical Details
 

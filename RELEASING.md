@@ -7,10 +7,13 @@ the token is configured.
 
 1. Create a repository secret named `CURSEFORGE_TOKEN` under **Settings → Secrets and variables → Actions**.
    It must be a CurseForge API token with upload access to **Locks neoforked** (project ID `1767458`).
-2. `GITHUB_TOKEN` is provided automatically by GitHub; there is nothing to create for GitHub Releases.
+2. Create a second secret named `MODRINTH_TOKEN` with a Modrinth API token that can upload to the
+   **locks-neoforked** project (slug configured as `modrinth-id`). The Modrinth project must exist before the
+   first release; if your project uses a different slug or ID, change `modrinth-id` in `release.yml`.
+3. `GITHUB_TOKEN` is provided automatically by GitHub; there is nothing to create for GitHub Releases.
 
-The CurseForge project description is **not** updated by the workflow. When the player-facing text changes,
-copy `publication/MOD_DESCRIPTION.md` into the project description on CurseForge manually.
+The CurseForge and Modrinth project descriptions are **not** updated by the workflow. When the player-facing
+text changes, copy `publication/MOD_DESCRIPTION.md` into both project descriptions manually.
 
 ## Publishing a version
 
@@ -24,7 +27,7 @@ There is no version field to fill in. The workflow reads `mod_version` from `gra
 - builds and tests with `./gradlew build`;
 - extracts only the matching `## <version>` section of `CHANGELOG.md` as release notes;
 - verifies `build/libs/locks_neoforked-<version>.jar` exists;
-- publishes that JAR to GitHub Releases and CurseForge in one
+- publishes that JAR to GitHub Releases, CurseForge and Modrinth in one
   [`mc-publish`](https://github.com/Kira-NT/mc-publish) step.
 
 If a GitHub tag for that version does not exist yet, `mc-publish` creates it from the exact commit that was
@@ -33,7 +36,8 @@ built. Existing tags are reused. Tags still follow the plain `1.8.3` convention,
 Avoid clicking **Run workflow** twice after a successful release: CurseForge would receive a duplicate file.
 `mc-publish` can update an existing GitHub release, but it cannot remove an already uploaded CurseForge file.
 
-If the first run fails because `CURSEFORGE_TOKEN` was missing, add the secret and click **Run workflow** again.
+If the first run fails because `CURSEFORGE_TOKEN` or `MODRINTH_TOKEN` was missing, add the secret and click
+**Run workflow** again.
 
 ## Files
 
