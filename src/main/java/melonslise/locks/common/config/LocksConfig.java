@@ -13,6 +13,7 @@ import com.google.common.collect.Lists;
 import melonslise.locks.Locks;
 import melonslise.locks.common.init.LocksItemTags;
 import melonslise.locks.common.init.LockTypeRegistry;
+import melonslise.locks.common.util.LootValueLimit;
 import melonslise.locks.common.util.LocksUtil;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -58,6 +59,7 @@ public final class LocksConfig
 	public static final ModConfigSpec.DoubleValue RARITY_RARE_MULT;
 	public static final ModConfigSpec.DoubleValue RARITY_EPIC_MULT;
 	public static final ModConfigSpec.ConfigValue<List<? extends Double>> LOOT_VALUE_TIERS;
+	public static final ModConfigSpec.DoubleValue MAX_LOOT_VALUE;
 	public static final ModConfigSpec.ConfigValue<List<? extends String>> ITEM_VALUE_OVERRIDES;
 
 	// Rebuilt by init(), which now also runs on every tag load (a /reload can change BIOME_GATED_LOCKS), so these
@@ -233,7 +235,7 @@ public final class LocksConfig
 		cfg.pop(); // Lockpick Stats
 
 		// Loot-Scaled Locks section
-		cfg.comment("When enabled, lock tier is determined by the value of a chest's loot table contents instead of random weighted selection. Chests below the minimum value threshold get no lock at all.").push("Loot-Scaled Locks");
+		cfg.comment("When enabled, lock tier is determined by the value of a chest's loot table contents instead of random weighted selection. Chests below the minimum value threshold — or above the optional maximum — get no lock at all.").push("Loot-Scaled Locks");
 		LOOT_SCALED_LOCKS = cfg
 			.comment("Enable loot-value-based lock tier selection. When disabled, the random weighted system (Generated Locks + Generated Lock Chances) is used instead")
 			.define("Enable Loot-Scaled Locks", true);
@@ -255,6 +257,12 @@ public final class LocksConfig
 		RARITY_EPIC_MULT = cfg
 			.comment("Value multiplier for EPIC rarity items")
 			.defineInRange("Epic Rarity Multiplier", 5.0d, 0.01d, 100d);
+		MAX_LOOT_VALUE = cfg
+			.comment("Optional upper loot-value cutoff for Locks-generated chest locks.",
+				"Chests worth MORE than this receive no Locks lock at all, leaving them free for another mod's higher-stakes locks.",
+				"Chests exactly at the limit stay eligible, and the lower 'Loot Value Tiers' threshold still applies.",
+				"-1 = no upper limit (default). Only used when 'Enable Loot-Scaled Locks' is on; the weighted fallback is unaffected.")
+			.defineInRange("Maximum Loot Value", LootValueLimit.DISABLED, LootValueLimit.DISABLED, 1.0E9d);
 		LOOT_VALUE_TIERS = cfg
 			.comment("Minimum loot value thresholds for each lock in the 'Generated Locks' list (same order).",
 				"WARNING: THE AMOUNT OF NUMBERS SHOULD BE EQUAL TO THE AMOUNT OF GENERATED LOCK ITEMS!!!",
@@ -468,7 +476,8 @@ public final class LocksConfig
 
 	/**
 	 * Returns a lock ItemStack based on the total loot value, or {@link ItemStack#EMPTY} if the value
-	 * is below all thresholds (meaning no lock should be generated for this chest).
+	 * is below all thresholds or above the optional maximum (meaning no lock should be generated for
+	 * this chest).
 	 */
 	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng)
 	{
@@ -489,6 +498,11 @@ public final class LocksConfig
 	 */
 	public static ItemStack getLockForLootValue(double lootValue, RandomSource rng, boolean biomeGatedAllowed)
 	{
+		// Upper bound first: above it the chest is left completely bare, so another lock mod can
+		// claim the high-value loot without Locks competing for it.
+		if(!LootValueLimit.isAllowed(lootValue, MAX_LOOT_VALUE.get()))
+			return ItemStack.EMPTY;
+
 		NavigableMap<Double, Item> tiers = !steelAvailable
 			? (biomeGatedAllowed ? noSteelLootValueTierMap : noSteelUngatedLootValueTierMap)
 			: (biomeGatedAllowed ? lootValueTierMap : ungatedLootValueTierMap);

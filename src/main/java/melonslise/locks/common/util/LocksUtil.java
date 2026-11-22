@@ -230,7 +230,8 @@ public final class LocksUtil
 	// Single source of truth for "what lock goes on this chest", shared by worldgen
 	// (LockChestsFeature) and the Respawning Structures compat hook. Returns a ready-to-register
 	// Lockable for the chest at pos, or null if it shouldn't be locked (not a valid lootable chest,
-	// failed the generation chance, the right half of a double chest, or no lock tier matched).
+	// failed the generation chance, the right half of a double chest, no lock tier matched, or the
+	// loot value is outside the configured lower/upper range).
 	// access is used for block/block-entity lookups; level provides the lockable handler + server.
 	// biome is the already-resolved holder at pos — pass null when it cannot be read without loading a chunk.
 	public static Lockable createChestLockable(LevelAccessor access, Level level, BlockPos pos, RandomSource rng, @Nullable Holder<Biome> biome)

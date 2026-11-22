@@ -216,8 +216,9 @@ Locked blocks are also protected from:
 - **Reaching a tier makes it possible, not certain.** A chest that qualifies for diamond still rolls for diamond
   and steps down a tier on a failure, so rich chests come out varied instead of uniform. The per-tier chances are
   configurable.
-- Two independent reasons a chest ends up bare: its loot value falls below the lowest threshold, or it lost the
-  30% roll above. Either can be tuned separately.
+- Three independent reasons a chest ends up bare: its loot value falls below the lowest threshold, it is above
+  the optional **Maximum Loot Value**, or it lost the 30% roll above. The upper cutoff is off by default; turn it
+  on to leave the richest loot free for another mod's higher-stakes locks.
 - Locks, keys and mechanisms are injected into chest loot tables (configurable by pattern,
   `minecraft:chests/` by default).
 - Villagers of a configurable profession (toolsmith by default) sell picks and mechanisms — and, as an opt-in,
@@ -248,7 +249,8 @@ than the other two.
   rarity multipliers, `Enchantment Value Bonus`, `Item Value Overrides`, the per-tier `Loot Value Tiers`
   thresholds (default `[2.0, 5.0, 9.0, 13.0, 20.0, 21.0]`) and **`Lock Tier Chances`** (default
   `[1.0, 0.85, 0.7, 0.55, 0.35, 0.5]`), the per-tier keep-chance that makes a qualifying tier a roll rather
-  than a guarantee
+  than a guarantee. **Maximum Loot Value** (`-1` = no limit) is the optional upper cutoff for chests that
+  should be left bare for another lock mod
 - **Randomize Loaded Locks** — whether to randomise combinations loaded from structure files (default false)
 - **Lock Stats / Lockpick Stats** — per-tier stat overrides (see the section above)
 

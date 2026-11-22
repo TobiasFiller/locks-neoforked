@@ -6,6 +6,12 @@
 
 - **Fixed a crash on server stop** (`Cannot get config value before config is loaded`). The config event handler also ran for NeoForge's `Unloading` event, after the config spec had already been detached; it now rebuilds derived values only on load and reload. Editing a config file while the server runs still refreshes the lockable blocks/tags and loot-table patterns.
 
+### Optional upper loot-value cutoff
+
+- **New `Maximum Loot Value` in `locks-common.toml`** under **Loot-Scaled Locks**. Set it to a number (for example `30`) and any generated chest whose estimated loot value is **above** that number receives **no Locks lock at all**, leaving the richest loot free for another mod's higher-stakes locks. Default `-1` means no upper limit, so existing worlds are unchanged.
+- The cutoff works alongside the existing lower bound: a chest still needs to reach the lowest **Loot Value Tiers** threshold, pass **Chest Lock Chance**, and roll a tier. Exactly at the limit is still eligible; only values above it are cut off.
+- Like the rest of loot-scaled generation, the setting only applies while **Enable Loot-Scaled Locks** is on. When loot scaling is disabled, the random weighted system is unchanged.
+
 ## 1.8.2
 
 ### No more server freeze during structure generation

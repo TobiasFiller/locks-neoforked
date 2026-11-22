@@ -116,13 +116,15 @@ Locks define resistance; lock picks define technique. **Lock enchantments** go o
 Lock picks are enchantable at the enchanting table (see the `enchantment_value` field below). Each enchantment can be individually enabled — and its effect tuned — in the server config.
 
 ### World Generation
-Locked chests spawn naturally in structure chests across the **Overworld, the Nether and the End**, as well as in modded dimensions. The lock tier is chosen by **loot value** — the richer a chest's loot table, the stronger its lock. Chests whose loot value falls **below the lowest configured threshold receive no lock at all**, while very valuable chests can receive diamond or netherite locks. The estimator weighs item rarity, enchantments, and stack counts (with sub-linear scaling so bulk common items don't inflate value) and supports per-item value overrides for materials like diamonds and netherite that are valuable despite a common rarity. The whole system can be switched to random weighted selection in the common config.
+Locked chests spawn naturally in structure chests across the **Overworld, the Nether and the End**, as well as in modded dimensions. The lock tier is chosen by **loot value** — the richer a chest's loot table, the stronger its lock. Chests whose loot value falls **below the lowest configured threshold receive no lock at all**, while very valuable chests can receive diamond or netherite locks. An optional **Maximum Loot Value** does the opposite: chests above it are left completely bare so another lock mod can claim the high-stakes loot. The estimator weighs item rarity, enchantments, and stack counts (with sub-linear scaling so bulk common items don't inflate value) and supports per-item value overrides for materials like diamonds and netherite that are valuable despite a common rarity. The whole system can be switched to random weighted selection in the common config.
 
 **The netherite lock is End-exclusive.** It only generates in End biomes, never in the Overworld, the Nether or a modded dimension — a chest there that qualifies for netherite drops to the next-best tier (diamond) rather than going unlocked. The same rule applies to locks randomised onto structure templates. Two datapack tags control it: `locks:biome_gated_locks` lists the restricted locks (ships with `locks:netherite_lock`), and `locks:biome_gated_lock_biomes` lists the biomes they may appear in (ships with `#minecraft:is_end`). Clear or extend either one to change the rule without touching the mod.
 
 **Not every chest is locked.** The default **Chest Lock Chance** is 0.7, so roughly three in ten structure chests are left bare — a lock on a crate is meant to be something you come across, not a given. Set it to 1.0 to lock every chest or lower it to leave more of them open.
 
 > **Can I make diamond/netherite locks appear only on high-value chests?** Yes — raise the upper **Loot Value Tiers** so only the richest loot reaches them, and raise the lowest threshold so poor chests get no lock. See [Configuration](#high-value-chest-locks-diamondnetherite) for a worked example. Note that the netherite tier additionally only rolls in the End, regardless of loot value.
+>
+> **Can I leave the very best chests unlocked by Locks for another mod?** Yes — set **Maximum Loot Value** in the same section. Values above it get no Locks lock at all, while everything at or below it is generated normally. Default `-1` means no upper limit.
 
 ### Villager & Wandering Trader Integration
 A configurable villager profession (default toolsmith) sells lock picks and lock mechanisms, and the wandering trader offers lock picks and enchanted locks. Every category — lock picks, locks, and mechanisms — can be toggled independently in the server config, so you can disable easy lock picks while still selling locks. Villager lock sales (early-game wood/copper/iron locks) are available as an opt-in.
@@ -237,7 +239,7 @@ A lock's `pick_wear` **can** be overridden this way, because it is read fresh on
 - **Generation Enchant Chance** -- Probability of generated locks being enchanted (default: 40%)
 - **Generated Locks & Generated Lock Chances** -- Which locks generate and their relative weights (used when Loot-Scaled Locks is disabled)
 - **Randomize Loaded Locks** -- Whether to randomize lock combinations when loading them from structure files
-- **Loot-Scaled Locks** -- When enabled (default), lock tier is chosen from a chest's loot value instead of random weights. Configurable item value formula with rarity multipliers, enchantment bonuses, per-tier value thresholds (**Loot Value Tiers**), sub-linear stack count scaling, and per-item value overrides. Chests below the lowest tier threshold receive **no lock**
+- **Loot-Scaled Locks** -- When enabled (default), lock tier is chosen from a chest's loot value instead of random weights. Configurable item value formula with rarity multipliers, enchantment bonuses, per-tier value thresholds (**Loot Value Tiers**), sub-linear stack count scaling, and per-item value overrides. Chests below the lowest tier threshold receive **no lock**; an optional **Maximum Loot Value** (`-1` = off) also leaves chests above that value bare
 - **Lock Stats & Lockpick Stats** -- Override built-in lock and lock pick stats without datapacks (set any value to -1 to keep the JSON default). Includes each lock's **Pick Wear**, the durability a wrong pin costs a lock pick. Pick durability is not here — it is fixed at registration; set it in `config/locks/lockpick_types/`
 
 ### Client Config (`locks-client.toml`)
@@ -331,6 +333,18 @@ With the shipped defaults a village chest (worth ~4.5) always gets **wood**, a c
 > **The netherite value must stay at or below ~22.** `chests/end_city_treasure` (worth 22.2) is the *only* End chest table in the game, and the netherite lock is End-gated. Any higher threshold makes the netherite lock impossible to generate anywhere, not merely rare.
 
 Remember that the netherite tier is additionally **End-only** — a threshold of 150 only ever produces a netherite lock in the End; elsewhere that chest falls back to diamond. See [World Generation](#world-generation).
+
+#### Leaving the richest chests to another lock mod
+
+`Maximum Loot Value` is the upper counterpart to the lowest **Loot Value Tiers** entry. A chest whose estimated value is **above** the maximum gets no Locks lock at all, without falling back to a lower tier and without using the weighted list. That makes room for another mod's locks on the best loot while Locks still handles the rest:
+
+```toml
+[Loot-Scaled Locks]
+    Enable Loot-Scaled Locks = true
+    Maximum Loot Value = 25.0
+```
+
+With the shipped value distribution, `25.0` cuts off only the very richest vanilla tables; `20.0` also removes the ancient-city/bastion band. A value exactly at the limit is still eligible, and `-1` (the default) restores the old unlimited behavior. The setting is read on config load/reload and only has an effect while loot-scaled generation is enabled.
 
 ## Building from Source
 
